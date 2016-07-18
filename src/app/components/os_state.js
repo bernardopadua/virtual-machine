@@ -23,7 +23,6 @@ export default class OsState extends React.Component {
 	}
 
 	refreshOsState(osSpec){
-		console.log(osSpec);
 		this.setState({os: osSpec});
 	}
 

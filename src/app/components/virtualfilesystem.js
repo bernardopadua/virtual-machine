@@ -21,6 +21,7 @@ export default class VirtualFileSystem extends React.Component {
 				createFile: {
 					style: this.styles.hidden,
 					fileName: "Teste.txt",
+					fileData: "testing RawText",
 					fileSize: 150
 				},
 				createFolder: {
@@ -29,9 +30,6 @@ export default class VirtualFileSystem extends React.Component {
 				}
 			}
 		}
-
-
-		console.log(this.state.options);
 
 		BoundLink.openChannel('VFS', ()=>{ this.openChannel(); });
 	}
@@ -49,7 +47,7 @@ export default class VirtualFileSystem extends React.Component {
 
 	createFile() {
 		var createFile = this.state.options.createFile;
-		FileSystem.createFile(createFile.fileName, "", Number.parseInt(createFile.fileSize));
+		FileSystem.createFile(createFile.fileName, createFile.fileData, Number.parseInt(createFile.fileSize));
 		
 		createFile.style = this.styles.hidden;
 		this.setState(createFile);
@@ -63,6 +61,24 @@ export default class VirtualFileSystem extends React.Component {
 		this.setState(createFolder);
 	}
 
+	onChangeField(e, fieldName, container) {
+		var options = {};
+		options[fieldName] = e.target.value;
+		container = Object.assign(container, options);
+		this.setState(container);
+	}
+
+	toogleValues(container) {
+		if(container.style == this.styles.shown) {
+			container.style = this.styles.hidden;
+		} 
+		else 
+		{
+			container.style = this.styles.shown;
+		}
+		this.setState(container);
+	}
+
 	render(){
 		var createFile   = this.state.options.createFile;
 		var createFolder = this.state.options.createFolder;
@@ -71,50 +87,22 @@ export default class VirtualFileSystem extends React.Component {
 				<div id="virtual-options">
 					<ul>
 						<li> 
-							<span style={{cursor: 'pointer'}} onClick={()=>{ 
-								var changeStyle = {style: (this.state.options.createFile.style == this.styles.shown ? this.styles.hidden : this.styles.shown)};
-								changeStyle = Object.assign(createFile, changeStyle);
-								this.setState(changeStyle);
-							}}>
+							<span style={{cursor: 'pointer'}} onClick={()=>{this.toogleValues(createFile)}}>
 								Create file
 							</span>
 							<div style={createFile.style}> 
-								FileName: <input type="text" defaultValue={createFile.fileName} onChange={
-									(e)=>{
-										var options = {
-											fileName: e.target.value								
-										};
-										options = Object.assign(createFile, options);
-										this.setState(options);
-								}} /><br />
-								FileSize: <input type="text" defaultValue={createFile.fileSize} onChange={
-									(e)=>{
-										var options = {
-											fileSize: e.target.value								
-										};
-										options = Object.assign(createFile, options);
-										this.setState(options);
-								}} /><br />
+								FileName: <input type="text" defaultValue={createFile.fileName} onChange={(e)=>{this.onChangeField(e, "fileName", createFile);}} /><br />
+								Data: <textarea defaultValue={createFile.fileData} onChange={(e)=>{this.onChangeField(e, "fileData", createFile);}}></textarea><br />
+								FileSize: <input type="text" defaultValue={createFile.fileSize} onChange={(e)=>{this.onChangeField(e, "fileSize", createFile);}} /><br />
 								<button onClick={()=>{this.createFile();}}>Create File</button>
 							</div>
 						</li>
 						<li>
-							<span style={{cursor: 'pointer'}} onClick={()=>{ 
-								var changeStyle = {style: (this.state.options.createFolder.style == this.styles.shown ? this.styles.hidden : this.styles.shown)};
-								changeStyle = Object.assign(createFolder, changeStyle);
-								this.setState(changeStyle);
-							}}>
+							<span style={{cursor: 'pointer'}} onClick={()=>{this.toogleValues(createFolder)}}>
 								Create folder
 							</span>
 							<div style={createFolder.style}>
-								Folder name: <input type="text" defaultValue={createFolder.folderName} onChange={
-									(e)=>{
-										var options = {
-											folderName: e.target.value								
-										};
-										options = Object.assign(createFolder, options);
-										this.setState(options);
-								}} />
+								Folder name: <input type="text" defaultValue={createFolder.folderName} onChange={(e)=>{this.onChangeField(e, "folderName", createFolder);}} />
 								<button onClick={()=>{this.createFolder();}}>Create folder</button>
 							</div>
 						</li>
@@ -122,7 +110,7 @@ export default class VirtualFileSystem extends React.Component {
 				</div>
 				<div id="virtual-workspace">
 					<ul> 
-						<FolderComponent folder={this.state.currentFolder} />
+						<FolderComponent eventMessage={this.state.eventMessage} folder={this.state.currentFolder} />
 					</ul>
 				</div>
 			</div>
@@ -197,11 +185,16 @@ export class FileComponent extends React.Component {
 		BoundLink.setDataCall('VFS', {action: "build-workspace"});
 	}
 
+	openFile(){
+		this.props.file.open();
+	}
+
 	render(){
 		var file = this.props.file.fileInfo;
 		return (
 			<li> 
-				{file.name} (size: {file.size}) // 
+				{file.name} (size: {file.size}) --
+				<a href="#" onClick={() => {this.openFile()}}>open</a> |
 				<a href="#" onClick={() => {this.copyFile()}}>copy</a> | 
 				<a href="#" onClick={() => {this.deleteFile()}}>delete</a>
 			</li>

@@ -62,35 +62,9 @@
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	(0, _reactDom.render)(_react2.default.createElement(_virtualmachine2.default, null), document.getElementById('app'));
-	/*
-
-	import DummyNoob from './dummynoob.js';
-
-	class TestSuite {
-		constructor(){
-			this.cc = 1;
-		}
-
-		run(){
-			this.test = new DummyNoob(() => { this.go(); });
-			this.cc = 2;
-			this.test.setTest();
-		}
-
-		go(){
-			console.log(this.cc);
-		}
-
-	}
-
-	var a = new TestSuite();
-
-	a.run();*/
-
-
-	//app import
-
-	//module imports
+	
+	//App import
+	//Module imports
 
 /***/ },
 /* 1 */
@@ -21656,21 +21630,33 @@
 	
 	var _OS2 = _interopRequireDefault(_OS);
 	
-	var _boundlink = __webpack_require__(/*! ./core/boundlink.js */ 177);
+	var _boundlink = __webpack_require__(/*! ./core/boundlink.js */ 176);
 	
 	var _boundlink2 = _interopRequireDefault(_boundlink);
 	
-	var _filesystem = __webpack_require__(/*! ./core/filesystem.js */ 178);
+	var _filesystem = __webpack_require__(/*! ./core/filesystem.js */ 179);
 	
 	var _filesystem2 = _interopRequireDefault(_filesystem);
 	
-	var _os_state = __webpack_require__(/*! ./components/os_state.js */ 179);
+	var _os_state = __webpack_require__(/*! ./components/os_state.js */ 180);
 	
 	var _os_state2 = _interopRequireDefault(_os_state);
 	
-	var _virtualfilesystem = __webpack_require__(/*! ./components/virtualfilesystem.js */ 180);
+	var _virtualfilesystem = __webpack_require__(/*! ./components/virtualfilesystem.js */ 181);
 	
 	var _virtualfilesystem2 = _interopRequireDefault(_virtualfilesystem);
+	
+	var _desktop = __webpack_require__(/*! ./components/desktop.js */ 182);
+	
+	var _desktop2 = _interopRequireDefault(_desktop);
+	
+	var _process_monitor = __webpack_require__(/*! ./components/process_monitor.js */ 184);
+	
+	var _process_monitor2 = _interopRequireDefault(_process_monitor);
+	
+	var _rawtext = __webpack_require__(/*! ./softwares/rawtext.js */ 185);
+	
+	var _rawtext2 = _interopRequireDefault(_rawtext);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -21684,6 +21670,9 @@
 	//Components
 	
 	
+	//Default Software
+	
+	
 	var VirtualMachine = function (_React$Component) {
 		_inherits(VirtualMachine, _React$Component);
 	
@@ -21694,16 +21683,19 @@
 	
 			_this.state = {
 				OS: null,
+				eventMessage: null,
 				vmSpecs: {
 					memory: "1024",
 					num_core: "1",
 					os_code: "1"
 				},
 				components: {
-					osState: null
+					osState: null,
+					processMonitor: null
 				}
 			};
 	
+			//Open communicating channel
 			_boundlink2.default.openChannel('VM', function () {
 				_this.openChannel();
 			});
@@ -21713,26 +21705,63 @@
 		_createClass(VirtualMachine, [{
 			key: 'openChannel',
 			value: function openChannel() {
-				console.log("message received");
+				var boundData = _boundlink2.default.getData('VM');
+	
 				if (this.state.OS !== null) {
 	
 					//What action to take.
-					var boundData = _boundlink2.default.getData('VM');
 					if (boundData.type == 'memory') {
-	
 						if (boundData.action == 'allocate-memory') {
-							this.setState({ components: { osState: this.state.OS.getSpecs() } });
+							this.state.components.osState = this.state.OS.getSpecs();
+							this.state.components.processMonitor = this.state.OS.getProcessPool();
+							this.setState(this.state.components);
 						} else if (boundData.action == 'error') {
 							console.log(boundData.error);
 						}
 					} else if (boundData.type == 'filesystem') {
-						var allProcess = this.state.OS.createProcess(boundData.action + "|" + boundData.name, boundData.type, boundData.size);
+						var allProcess = this.state.OS.createProcess(boundData.action + "--" + boundData.name, boundData.type, boundData.size);
 						if (boundData.callback !== null) {
 							allProcess.setCallbackProcessing(boundData.callback);
 						}
 						this.state.OS.allocateProcess(allProcess);
 					}
+	
+					//Setting message to desktop event message
+					if (boundData.type == 'event-message') {
+						var defaultTime = this.state.eventMessage.timeMessage;
+						this.state.eventMessage.timeMessage = boundData.time === undefined ? defaultTime : boundData.time;
+						this.state.eventMessage.message = boundData.data;
+						this.state.eventMessage.type = 'to-user';
+						this.state.eventMessage.callback();
+					}
+	
+					//Open file
+					if (boundData.type == 'open-file') {
+						this.state.OS.automaticFileOpen(boundData.file);
+					}
+	
+					if (boundData.type == 'process-monitor') {
+						console.log('VM-ProcessMonitor');
+						console.log(boundData);
+						this.state.components.processMonitor = boundData.data;
+						this.setState(this.state.components.processMonitor);
+					}
 				}
+	
+				//Setting event message object to desktop component
+				if (boundData.type == 'desktop') {
+					this.state.eventMessage = boundData.evtmsg;
+					this.setState(this.state);
+				}
+			}
+	
+			//Installing default softwares
+	
+		}, {
+			key: 'installSoftwares',
+			value: function installSoftwares() {
+				var softRawText = new _rawtext2.default();
+				this.state.OS.installSoftware(softRawText);
 			}
 		}, {
 			key: 'render',
@@ -21758,48 +21787,102 @@
 							'div',
 							null,
 							_react2.default.createElement(
-								'label',
-								null,
-								_react2.default.createElement(
-									'h3',
-									null,
-									'Virtual OsState'
-								)
-							),
-							_react2.default.createElement(
 								'div',
-								{ id: 'os-state' },
-								_react2.default.createElement(_os_state2.default, { os: this.state.components.osState })
+								{ id: 'os-monitors' },
+								_react2.default.createElement(
+									'div',
+									{ style: { float: "left", width: "30%" } },
+									_react2.default.createElement(
+										'label',
+										null,
+										_react2.default.createElement(
+											'h3',
+											null,
+											'Virtual OsState'
+										)
+									),
+									_react2.default.createElement(_os_state2.default, { os: this.state.components.osState })
+								),
+								_react2.default.createElement(
+									'div',
+									{ style: { float: "left", width: "50%" } },
+									_react2.default.createElement(
+										'label',
+										null,
+										_react2.default.createElement(
+											'h3',
+											null,
+											'Process Monitor'
+										)
+									),
+									_react2.default.createElement(_process_monitor2.default, { prcPool: this.state.components.processMonitor })
+								)
 							)
 						),
 						_react2.default.createElement(
 							'div',
-							null,
-							' ',
+							{ style: { clear: "both" } },
 							_react2.default.createElement(
-								'button',
-								{ onClick: function onClick() {
-										_this2.state.OS.processDummy(150);
-									} },
-								'OpenApp'
+								'ul',
+								{ id: 'vm-opts' },
+								_react2.default.createElement(
+									'li',
+									null,
+									' ',
+									_react2.default.createElement(
+										'button',
+										{ onClick: function onClick() {
+												_this2.state.OS.processDummy(150);
+											} },
+										'OpenApp'
+									),
+									' '
+								),
+								_react2.default.createElement(
+									'li',
+									null,
+									' ',
+									_react2.default.createElement(
+										'button',
+										{ onClick: function onClick(e) {
+												_this2.installSoftwares();e.target.parentNode.removeChild(e.target);
+											} },
+										'Install RawText'
+									),
+									' '
+								)
 							)
 						),
 						_react2.default.createElement(
 							'div',
-							null,
+							{ id: 'work-space' },
 							_react2.default.createElement(
-								'label',
-								null,
+								'div',
+								{ style: { float: "left", width: "30%" } },
 								_react2.default.createElement(
-									'h3',
+									'label',
 									null,
-									'Virtual Filesystem'
-								)
+									_react2.default.createElement(
+										'h3',
+										null,
+										'Virtual Filesystem'
+									)
+								),
+								_react2.default.createElement(_virtualfilesystem2.default, { eventMessage: this.state.eventMessage })
 							),
 							_react2.default.createElement(
 								'div',
-								{ id: 'work-space' },
-								_react2.default.createElement(_virtualfilesystem2.default, null)
+								{ style: { float: "left", width: "70%", overflow: "hidden" } },
+								_react2.default.createElement(
+									'label',
+									null,
+									_react2.default.createElement(
+										'h3',
+										null,
+										'Desktop'
+									)
+								),
+								_react2.default.createElement(_desktop2.default, { eventMessage: this.state.eventMessage })
 							)
 						)
 					);
@@ -21867,15 +21950,15 @@
 					_react2.default.createElement(
 						'button',
 						{ onClick: function onClick() {
-								return _this2.setComputer();
+								return _this2.setVirtualMachine();
 							} },
 						' Make My Computer '
 					)
 				);
 			}
 		}, {
-			key: 'setComputer',
-			value: function setComputer() {
+			key: 'setVirtualMachine',
+			value: function setVirtualMachine() {
 				var tmpSpecs = this.state.vmSpecs;
 				var tmpOS = new _OS2.default(tmpSpecs.memory, tmpSpecs.num_core);
 	
@@ -21886,7 +21969,10 @@
 				_filesystem2.default.buildVirtualSpace();
 	
 				//Rendering again
-				this.setState({ OS: tmpOS, components: { osState: tmpOS.getSpecs() } });
+				this.state.OS = tmpOS;
+				this.state.components.osState = tmpOS.getSpecs();
+				this.state.components.processMonitor = tmpOS.getProcessPool();
+				this.setState(this.state);
 			}
 		}, {
 			key: 'refreshComputer',
@@ -21917,21 +22003,25 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _kernel = __webpack_require__(/*! ./kernel.js */ 174);
-	
-	var _kernel2 = _interopRequireDefault(_kernel);
-	
-	var _hardware = __webpack_require__(/*! ../computer/hardware.js */ 175);
+	var _hardware = __webpack_require__(/*! ../computer/hardware.js */ 174);
 	
 	var _hardware2 = _interopRequireDefault(_hardware);
 	
-	var _process = __webpack_require__(/*! ./process.js */ 176);
+	var _kernel = __webpack_require__(/*! ./kernel.js */ 175);
+	
+	var _kernel2 = _interopRequireDefault(_kernel);
+	
+	var _boundlink = __webpack_require__(/*! ./boundlink.js */ 176);
+	
+	var _boundlink2 = _interopRequireDefault(_boundlink);
+	
+	var _process = __webpack_require__(/*! ./process.js */ 177);
 	
 	var _process2 = _interopRequireDefault(_process);
 	
-	var _boundlink = __webpack_require__(/*! ./boundlink.js */ 177);
+	var _software = __webpack_require__(/*! ./software.js */ 178);
 	
-	var _boundlink2 = _interopRequireDefault(_boundlink);
+	var _software2 = _interopRequireDefault(_software);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -21957,8 +22047,20 @@
 				}
 			};
 	
+			//Softwares
+			this.installedSoftwares = [];
+	
 			//Hardware Specs
 			this.hardware = new _hardware2.default(memory, num_cores);
+	
+			//Message event for desktop
+			this.eventMessages = {
+				message: null,
+				timeMessage: 4000,
+				object: null,
+				type: null,
+				callback: null
+			};
 		}
 	
 		_createClass(OperatingSystem, [{
@@ -21967,6 +22069,20 @@
 				var newProcess = new _process2.default(this.pidList, memory, this.hardware.processCore);
 				newProcess.setDuration(this.getKernel().getMaxMemory());
 				this.allocateProcess(newProcess);
+			}
+		}, {
+			key: 'getSoftwareToFile',
+			value: function getSoftwareToFile(extension) {
+				var softReturn = null;
+	
+				this.installedSoftwares.map(function (s) {
+	
+					if (s.doYouOpen(extension)) {
+						softReturn = s;
+					};
+				});
+	
+				return softReturn;
 			}
 		}, {
 			key: 'installCrankshaft',
@@ -21985,10 +22101,72 @@
 				osProcess.setProcessInfo({ name: this.specs.nameOS, type: 'os' });
 				this.allocateProcess(osProcess);
 	
+				//Initiate desktop
+				_boundlink2.default.setDataCall('VM', { type: 'desktop', action: "set-eventmessage", evtmsg: this.eventMessages });
+	
 				//Initializes the process looping
 				this.intervalProcessPool = setInterval(function () {
 					_this.loopProcessPool();
 				}, 1000);
+			}
+		}, {
+			key: 'installSoftware',
+			value: function installSoftware(softSpec) {
+				var _this2 = this;
+	
+				var newProcess = new _process2.default(this.pidList, softSpec.software.size, this.hardware.processCore);
+				newProcess.setDuration(this.getKernel().getMaxMemory());
+				newProcess.setProcessProperty("name", "installing-" + softSpec.software.name);
+	
+				var newSoftware = new _software2.default(softSpec.software, softSpec.interface);
+	
+				newProcess.setCallbackProcessing(function () {
+					_this2.installedSoftwares.push(newSoftware);
+	
+					//Event messages in desktop
+					_this2.eventMessages.type = 'to-user';
+					_this2.eventMessages.message = "[" + newSoftware.software.name + "] installed!";
+					_this2.eventMessages.callback();
+				});
+				this.allocateProcess(newProcess);
+			}
+		}, {
+			key: 'automaticFileOpen',
+			value: function automaticFileOpen(file) {
+				var soft = this.getSoftwareToFile(file.extension);
+				if (soft !== null) {
+					if (!soft.isOpen()) {
+						var softProcess = this.createProcess(soft.software.name, 'software', soft.software.size);
+						soft.setProcess(softProcess);
+						this.allocateProcess(softProcess);
+						soft.setFileToOpen(file);
+	
+						//File locking
+						file.lockMe();
+	
+						//Event messages in desktop
+						this.eventMessages.type = 'open-software';
+						this.eventMessages.object = soft;
+						this.eventMessages.callback();
+					} else {
+						//Event messages software already open
+						this.eventMessages.type = 'to-user';
+						this.eventMessages.message = soft.software.name + " already is open, close it first!\nClose it to open another file!";
+						this.eventMessages.callback();
+					}
+				}
+			}
+		}, {
+			key: 'refreshProcessMonitor',
+			value: function refreshProcessMonitor() {
+				console.log("ProcessMonitor-Refresh");
+				console.log(this.processPool);
+				_boundlink2.default.setDataCall('VM', { type: 'process-monitor', data: this.processPool });
+			}
+		}, {
+			key: 'getProcessPool',
+			value: function getProcessPool() {
+				return this.processPool;
 			}
 		}, {
 			key: 'loopProcessPool',
@@ -22003,14 +22181,19 @@
 						var prc = _step.value;
 	
 	
-						if (prc.getType() !== 'os') {
+						var procType = prc.getType();
+	
+						if (procType !== 'os') {
 							if (!prc.isRunning() && this.hardware.useCore()) {
 								prc.run();
+								this.refreshProcessMonitor();
 							}
-							console.log('done: ' + prc.processDone());
 							if (prc.processDone()) {
+								console.log("free-process");
+								console.log(prc);
 								this.hardware.freeCore();
 								this.deallocateProcess(prc);
+								this.refreshProcessMonitor();
 							}
 						}
 					}
@@ -22028,6 +22211,19 @@
 						}
 					}
 				}
+			}
+		}, {
+			key: 'killProcessByPid',
+			value: function killProcessByPid(prId) {
+				var _this3 = this;
+	
+				this.processPool.map(function (prc) {
+	
+					if (prc.processInfo.pid == prId) {
+						_this3.deallocateProcess(prc);
+						//Call desktop
+					}
+				});
 			}
 		}, {
 			key: 'createProcess',
@@ -22050,7 +22246,6 @@
 					_boundlink2.default.setData('VM', { type: 'memory', action: 'allocate-memory' });
 					_boundlink2.default.callReverse('VM');
 				} else {
-					console.log("error");
 					_boundlink2.default.setData('VM', { type: 'memory', action: 'error', error: memoryAllocate.error });
 					_boundlink2.default.callReverse('VM');
 				}
@@ -22058,15 +22253,14 @@
 		}, {
 			key: 'deallocateProcess',
 			value: function deallocateProcess(objProcess) {
-				var _this2 = this;
+				var _this4 = this;
 	
 				var memoryDeallocate = this.getKernel().deallocateMemory(objProcess.getMemory());
 	
 				if (memoryDeallocate) {
-					console.log(this.processPool.indexOf(objProcess));
 					(function () {
-						var pos = _this2.processPool.indexOf(objProcess);
-						_this2.processPool.splice(pos, 1); //Removing process from pool
+						var pos = _this4.processPool.indexOf(objProcess);
+						_this4.processPool.splice(pos, 1); //Removing process from pool
 					})();
 					_boundlink2.default.setData('VM', { type: 'memory', action: 'allocate-memory' });
 					_boundlink2.default.callReverse('VM');
@@ -22104,6 +22298,56 @@
 
 /***/ },
 /* 174 */
+/*!**************************************!*\
+  !*** ./src/app/computer/hardware.js ***!
+  \**************************************/
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var Hardware = function () {
+		function Hardware(memory, numCores) {
+			_classCallCheck(this, Hardware);
+	
+			this.memory = memory;
+			this.processCore = numCores;
+			this.usingCores = 0;
+		}
+	
+		_createClass(Hardware, [{
+			key: "useCore",
+			value: function useCore() {
+				if (this.usingCores < this.processCore) {
+					this.usingCores++;
+					return true;
+				} else {
+					return false;
+				}
+			}
+		}, {
+			key: "freeCore",
+			value: function freeCore() {
+				if (this.usingCores > 0) {
+					this.usingCores--;
+				}
+			}
+		}]);
+	
+		return Hardware;
+	}();
+	
+	exports.default = Hardware;
+
+/***/ },
+/* 175 */
 /*!********************************!*\
   !*** ./src/app/core/kernel.js ***!
   \********************************/
@@ -22176,155 +22420,7 @@
 	exports.default = Kernel;
 
 /***/ },
-/* 175 */
-/*!**************************************!*\
-  !*** ./src/app/computer/hardware.js ***!
-  \**************************************/
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var Hardware = function () {
-		function Hardware(memory, numCores) {
-			_classCallCheck(this, Hardware);
-	
-			this.memory = memory;
-			this.processCore = numCores;
-			this.usingCores = 0;
-		}
-	
-		_createClass(Hardware, [{
-			key: "useCore",
-			value: function useCore() {
-				if (this.usingCores < this.processCore) {
-					this.usingCores++;
-					return true;
-				} else {
-					return false;
-				}
-			}
-		}, {
-			key: "freeCore",
-			value: function freeCore() {
-				if (this.usingCores > 0) {
-					this.usingCores--;
-				}
-			}
-		}]);
-	
-		return Hardware;
-	}();
-	
-	exports.default = Hardware;
-
-/***/ },
 /* 176 */
-/*!*********************************!*\
-  !*** ./src/app/core/process.js ***!
-  \*********************************/
-/***/ function(module, exports) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var Process = function () {
-		function Process(pid, memory, speed) {
-			_classCallCheck(this, Process);
-	
-			this.processInfo = {
-				pid: pid,
-				name: null,
-				memory: memory,
-				type: 'normal',
-				duration: null,
-				speed: speed,
-				isDone: false,
-				isRunning: false,
-				lpProcess: null,
-				callback: null
-			};
-		}
-	
-		_createClass(Process, [{
-			key: 'run',
-			value: function run() {
-				var _this = this;
-	
-				this.processInfo.isRunning = true;
-				this.processInfo.lpProcess = setInterval(function () {
-					_this.processInfo.duration = _this.processInfo.duration - _this.processInfo.speed;
-					console.log('runprocess / duration: ' + _this.processInfo.duration);
-					_this.processInfo.isDone = _this.processInfo.duration <= 0 ? true : false;
-					if (_this.processDone()) {
-						console.log("PROCESS INFOO;;; ");
-						console.log(_this.processInfo);
-						if (_this.processInfo.callback !== null) {
-							console.log('callback-process');
-							_this.processInfo.callback();
-						}
-						clearInterval(_this.processInfo.lpProcess);
-					}
-				}, this.processInfo.speed * 1000);
-			}
-		}, {
-			key: 'setDuration',
-			value: function setDuration(maxMemory) {
-				this.processInfo.duration = maxMemory / this.processInfo.memory / this.processInfo.speed;
-			}
-		}, {
-			key: 'setProcessInfo',
-			value: function setProcessInfo(objInfo) {
-				this.processInfo = Object.assign(this.processInfo, objInfo);
-			}
-		}, {
-			key: 'getMemory',
-			value: function getMemory() {
-				return this.processInfo.memory;
-			}
-		}, {
-			key: 'processDone',
-			value: function processDone() {
-				return this.processInfo.isDone;
-			}
-		}, {
-			key: 'getType',
-			value: function getType() {
-				return this.processInfo.type;
-			}
-		}, {
-			key: 'isRunning',
-			value: function isRunning() {
-				return this.processInfo.isRunning;
-			}
-		}, {
-			key: 'setCallbackProcessing',
-			value: function setCallbackProcessing(prcCallback) {
-				this.processInfo.callback = prcCallback;
-			}
-		}]);
-	
-		return Process;
-	}();
-	
-	exports.default = Process;
-
-/***/ },
-/* 177 */
 /*!***********************************!*\
   !*** ./src/app/core/boundlink.js ***!
   \***********************************/
@@ -22383,7 +22479,216 @@
 	module.exports = BoundLink;
 
 /***/ },
+/* 177 */
+/*!*********************************!*\
+  !*** ./src/app/core/process.js ***!
+  \*********************************/
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var Process = function () {
+		function Process(pid, memory, speed) {
+			_classCallCheck(this, Process);
+	
+			this.processInfo = {
+				pid: pid,
+				name: null,
+				memory: memory,
+				type: 'normal',
+				duration: null,
+				speed: speed,
+				isDone: false,
+				isRunning: false,
+				lpProcess: null,
+				callback: null
+			};
+		}
+	
+		_createClass(Process, [{
+			key: 'run',
+			value: function run() {
+				var _this = this;
+	
+				this.processInfo.isRunning = true;
+	
+				if (this.processInfo.type !== 'software') {
+					this.processInfo.lpProcess = setInterval(function () {
+	
+						_this.processInfo.duration = _this.processInfo.duration - _this.processInfo.speed;
+						_this.processInfo.isDone = _this.processInfo.duration <= 0 ? true : false;
+	
+						if (_this.processDone()) {
+							if (_this.processInfo.callback !== null) {
+								_this.processInfo.callback();
+							}
+							clearInterval(_this.processInfo.lpProcess);
+						}
+					}, this.processInfo.speed * 1000 / this.processInfo.speed);
+				}
+			}
+		}, {
+			key: 'setProcessProperty',
+			value: function setProcessProperty(name, value) {
+				this.processInfo[name] = value;
+			}
+		}, {
+			key: 'setDuration',
+			value: function setDuration(maxMemory) {
+				this.processInfo.duration = this.processInfo.memory * (this.processInfo.speed * 0.04);
+			}
+		}, {
+			key: 'setProcessInfo',
+			value: function setProcessInfo(objInfo) {
+				this.processInfo = Object.assign(this.processInfo, objInfo);
+			}
+		}, {
+			key: 'getMemory',
+			value: function getMemory() {
+				return this.processInfo.memory;
+			}
+		}, {
+			key: 'processDone',
+			value: function processDone() {
+				return this.processInfo.isDone;
+			}
+		}, {
+			key: 'getPid',
+			value: function getPid() {
+				return this.processInfo.pid;
+			}
+		}, {
+			key: 'getType',
+			value: function getType() {
+				return this.processInfo.type;
+			}
+		}, {
+			key: 'isRunning',
+			value: function isRunning() {
+				return this.processInfo.isRunning;
+			}
+		}, {
+			key: 'setCallbackProcessing',
+			value: function setCallbackProcessing(prcCallback) {
+				this.processInfo.callback = prcCallback;
+			}
+		}, {
+			key: 'closeMe',
+			value: function closeMe() {
+				console.log("process-close-me-method");
+				this.processInfo.isDone = true;
+			}
+		}]);
+	
+		return Process;
+	}();
+	
+	exports.default = Process;
+
+/***/ },
 /* 178 */
+/*!**********************************!*\
+  !*** ./src/app/core/software.js ***!
+  \**********************************/
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var Software = function () {
+		function Software(objSoft, objInterface) {
+			_classCallCheck(this, Software);
+	
+			this.software = {
+				name: objSoft.name,
+				description: objSoft.description,
+				extensions: objSoft.extensions,
+				size: objSoft.size,
+				process: null,
+				isOpened: false
+			};
+	
+			this.inParameter = {
+				text: null,
+				file: null
+			};
+	
+			this.interface = {
+				header: objInterface.header,
+				body: objInterface.body,
+				footer: objInterface.footer
+			};
+		}
+	
+		_createClass(Software, [{
+			key: 'close',
+			value: function close() {
+				this.software.process.closeMe();
+				this.software.isOpened = false;
+			}
+		}, {
+			key: 'setProcess',
+			value: function setProcess(pProcess) {
+				this.software.process = pProcess;
+				this.software.isOpened = true;
+			}
+		}, {
+			key: 'setFileToOpen',
+			value: function setFileToOpen(file) {
+				this.inParameter.file = file;
+			}
+		}, {
+			key: 'setTextParameter',
+			value: function setTextParameter(parameter) {
+				this.inParameter.text = parameter;
+			}
+		}, {
+			key: 'getFile',
+			value: function getFile() {
+				return this.inParameter.file;
+			}
+		}, {
+			key: 'isOpen',
+			value: function isOpen() {
+				return this.software.isOpened;
+			}
+		}, {
+			key: 'doYouOpen',
+			value: function doYouOpen(ext) {
+				if (this.software.extensions[0] == 'any') {
+					return true;
+				} else {
+					var iDo = null;
+					iDo = this.sofware.extensions.find(function (ex) {
+						return ex == ext;
+					});
+					return iDo !== null ? true : false;
+				}
+			}
+		}]);
+	
+		return Software;
+	}();
+	
+	exports.default = Software;
+
+/***/ },
+/* 179 */
 /*!************************************!*\
   !*** ./src/app/core/filesystem.js ***!
   \************************************/
@@ -22398,11 +22703,11 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _process = __webpack_require__(/*! ./process.js */ 176);
+	var _process = __webpack_require__(/*! ./process.js */ 177);
 	
 	var _process2 = _interopRequireDefault(_process);
 	
-	var _boundlink = __webpack_require__(/*! ./boundlink.js */ 177);
+	var _boundlink = __webpack_require__(/*! ./boundlink.js */ 176);
 	
 	var _boundlink2 = _interopRequireDefault(_boundlink);
 	
@@ -22461,6 +22766,7 @@
 					unqId: FileSystem.getUniqId(),
 					name: file.fileInfo.name,
 					size: file.fileInfo.size,
+					data: file.fileData.data,
 					parentFolder: folder
 				};
 				var file = new File(fileInfo);
@@ -22470,27 +22776,35 @@
 		}, {
 			key: 'createFile',
 			value: function createFile(name, data, size) {
-				var fileInfo = {
-					unqId: FileSystem.getUniqId(),
-					name: name,
-					size: size,
-					parentFolder: FileSystem.currentLocation
-				};
-				var file = new File(fileInfo);
 	
-				_boundlink2.default.setData('VM', {
-					type: 'filesystem',
-					action: 'create-file',
-					size: size,
-					name: name,
-					callback: function callback() {
-						FileSystem.currentLocation.addFile(file);
-						_boundlink2.default.setData('VFS', { action: 'build-workspace' });
-						_boundlink2.default.callReverse('VFS');
-					}
-				});
+				if (FileSystem.currentLocation.folderInfo.files.find(function (tmpFile) {
+					return tmpFile.fileInfo.name == name;
+				}) === undefined) {
+					var fileInfo = {
+						unqId: FileSystem.getUniqId(),
+						name: name,
+						data: data,
+						size: size,
+						parentFolder: FileSystem.currentLocation
+					};
+					var file = new File(fileInfo);
 	
-				_boundlink2.default.callReverse('VM');
+					_boundlink2.default.setData('VM', {
+						type: 'filesystem',
+						action: 'create-file',
+						size: size,
+						name: name,
+						callback: function callback() {
+							FileSystem.currentLocation.addFile(file);
+							_boundlink2.default.setData('VFS', { action: 'build-workspace' });
+							_boundlink2.default.callReverse('VFS');
+						}
+					});
+	
+					_boundlink2.default.callReverse('VM');
+				} else {
+					_boundlink2.default.setDataCall('VM', { type: "event-message", data: "File already exists!", time: 1000 });
+				}
 			}
 		}, {
 			key: 'createFolder',
@@ -22550,7 +22864,6 @@
 			value: function pasteFile() {
 				var _this = this;
 	
-				console.log(FileSystem.getClipboard());
 				if (FileSystem.getClipboard() !== null) {
 					var fileName = FileSystem.getClipboard().fileInfo.name;
 					var fileToPaste = FileSystem.getClipboard();
@@ -22563,7 +22876,6 @@
 							size: fileToPaste.fileInfo.size,
 							name: fileToPaste.fileInfo.name,
 							callback: function callback() {
-	
 								var newFile = FileSystem.cloneFile(fileToPaste, _this);
 								_this.addFile(newFile);
 	
@@ -22575,6 +22887,7 @@
 						console.log("File is already exists!");
 					}
 				} else {
+					_boundlink2.default.setDataCall('VM', { type: 'event-message', data: "Clipboard is empty!" });
 					console.log("Clipboard is empty!");
 				}
 			}
@@ -22607,14 +22920,44 @@
 				unqId: objFile.unqId,
 				name: objFile.name,
 				size: objFile.size,
-				parentFolder: objFile.parentFolder
+				extension: null,
+				parentFolder: objFile.parentFolder,
+				isOpen: false
 			};
 			this.fileData = {
-				data: null
+				data: objFile.data
 			};
+	
+			//Get extension from file
+			var ext = this.fileInfo.name.split('.');
+			this.fileInfo.extension = ext.length > 1 ? ext[ext.length - 1] : "";
 		}
 	
 		_createClass(File, [{
+			key: 'open',
+			value: function open() {
+				if (!this.fileInfo.isOpen) {
+					_boundlink2.default.setDataCall('VM', { type: 'open-file', file: this });
+				} else {
+					_boundlink2.default.setDataCall('VM', { type: 'event-message', data: "File already opened!", time: 2000 });
+				}
+			}
+		}, {
+			key: 'lockMe',
+			value: function lockMe() {
+				this.fileInfo.isOpen = true;
+			}
+		}, {
+			key: 'unlockMe',
+			value: function unlockMe() {
+				this.fileInfo.isOpen = false;
+			}
+		}, {
+			key: 'save',
+			value: function save(newText) {
+				this.fileData.data = newText;
+			}
+		}, {
 			key: 'deleteFromFolder',
 			value: function deleteFromFolder() {
 				this.fileInfo.parentFolder.deleteFile(this);
@@ -22625,7 +22968,7 @@
 	}();
 
 /***/ },
-/* 179 */
+/* 180 */
 /*!****************************************!*\
   !*** ./src/app/components/os_state.js ***!
   \****************************************/
@@ -22695,7 +23038,6 @@
 		}, {
 			key: "refreshOsState",
 			value: function refreshOsState(osSpec) {
-				console.log(osSpec);
 				this.setState({ os: osSpec });
 			}
 		}]);
@@ -22709,7 +23051,7 @@
 	module.exports = OsState;
 
 /***/ },
-/* 180 */
+/* 181 */
 /*!*************************************************!*\
   !*** ./src/app/components/virtualfilesystem.js ***!
   \*************************************************/
@@ -22728,11 +23070,11 @@
 	
 	var _react2 = _interopRequireDefault(_react);
 	
-	var _filesystem = __webpack_require__(/*! ../core/filesystem.js */ 178);
+	var _filesystem = __webpack_require__(/*! ../core/filesystem.js */ 179);
 	
 	var _filesystem2 = _interopRequireDefault(_filesystem);
 	
-	var _boundlink = __webpack_require__(/*! ../core/boundlink.js */ 177);
+	var _boundlink = __webpack_require__(/*! ../core/boundlink.js */ 176);
 	
 	var _boundlink2 = _interopRequireDefault(_boundlink);
 	
@@ -22767,6 +23109,7 @@
 					createFile: {
 						style: _this.styles.hidden,
 						fileName: "Teste.txt",
+						fileData: "testing RawText",
 						fileSize: 150
 					},
 					createFolder: {
@@ -22775,8 +23118,6 @@
 					}
 				}
 			};
-	
-			console.log(_this.state.options);
 	
 			_boundlink2.default.openChannel('VFS', function () {
 				_this.openChannel();
@@ -22801,7 +23142,7 @@
 			key: 'createFile',
 			value: function createFile() {
 				var createFile = this.state.options.createFile;
-				_filesystem2.default.createFile(createFile.fileName, "", Number.parseInt(createFile.fileSize));
+				_filesystem2.default.createFile(createFile.fileName, createFile.fileData, Number.parseInt(createFile.fileSize));
 	
 				createFile.style = this.styles.hidden;
 				this.setState(createFile);
@@ -22814,6 +23155,24 @@
 	
 				createFolder.style = this.styles.hidden;
 				this.setState(createFolder);
+			}
+		}, {
+			key: 'onChangeField',
+			value: function onChangeField(e, fieldName, container) {
+				var options = {};
+				options[fieldName] = e.target.value;
+				container = Object.assign(container, options);
+				this.setState(container);
+			}
+		}, {
+			key: 'toogleValues',
+			value: function toogleValues(container) {
+				if (container.style == this.styles.shown) {
+					container.style = this.styles.hidden;
+				} else {
+					container.style = this.styles.shown;
+				}
+				this.setState(container);
 			}
 		}, {
 			key: 'render',
@@ -22837,9 +23196,7 @@
 								_react2.default.createElement(
 									'span',
 									{ style: { cursor: 'pointer' }, onClick: function onClick() {
-											var changeStyle = { style: _this2.state.options.createFile.style == _this2.styles.shown ? _this2.styles.hidden : _this2.styles.shown };
-											changeStyle = Object.assign(createFile, changeStyle);
-											_this2.setState(changeStyle);
+											_this2.toogleValues(createFile);
 										} },
 									'Create file'
 								),
@@ -22848,20 +23205,17 @@
 									{ style: createFile.style },
 									'FileName: ',
 									_react2.default.createElement('input', { type: 'text', defaultValue: createFile.fileName, onChange: function onChange(e) {
-											var options = {
-												fileName: e.target.value
-											};
-											options = Object.assign(createFile, options);
-											_this2.setState(options);
+											_this2.onChangeField(e, "fileName", createFile);
+										} }),
+									_react2.default.createElement('br', null),
+									'Data: ',
+									_react2.default.createElement('textarea', { defaultValue: createFile.fileData, onChange: function onChange(e) {
+											_this2.onChangeField(e, "fileData", createFile);
 										} }),
 									_react2.default.createElement('br', null),
 									'FileSize: ',
 									_react2.default.createElement('input', { type: 'text', defaultValue: createFile.fileSize, onChange: function onChange(e) {
-											var options = {
-												fileSize: e.target.value
-											};
-											options = Object.assign(createFile, options);
-											_this2.setState(options);
+											_this2.onChangeField(e, "fileSize", createFile);
 										} }),
 									_react2.default.createElement('br', null),
 									_react2.default.createElement(
@@ -22879,9 +23233,7 @@
 								_react2.default.createElement(
 									'span',
 									{ style: { cursor: 'pointer' }, onClick: function onClick() {
-											var changeStyle = { style: _this2.state.options.createFolder.style == _this2.styles.shown ? _this2.styles.hidden : _this2.styles.shown };
-											changeStyle = Object.assign(createFolder, changeStyle);
-											_this2.setState(changeStyle);
+											_this2.toogleValues(createFolder);
 										} },
 									'Create folder'
 								),
@@ -22890,11 +23242,7 @@
 									{ style: createFolder.style },
 									'Folder name: ',
 									_react2.default.createElement('input', { type: 'text', defaultValue: createFolder.folderName, onChange: function onChange(e) {
-											var options = {
-												folderName: e.target.value
-											};
-											options = Object.assign(createFolder, options);
-											_this2.setState(options);
+											_this2.onChangeField(e, "folderName", createFolder);
 										} }),
 									_react2.default.createElement(
 										'button',
@@ -22913,7 +23261,7 @@
 						_react2.default.createElement(
 							'ul',
 							null,
-							_react2.default.createElement(FolderComponent, { folder: this.state.currentFolder })
+							_react2.default.createElement(FolderComponent, { eventMessage: this.state.eventMessage, folder: this.state.currentFolder })
 						)
 					)
 				);
@@ -23038,6 +23386,11 @@
 				_boundlink2.default.setDataCall('VFS', { action: "build-workspace" });
 			}
 		}, {
+			key: 'openFile',
+			value: function openFile() {
+				this.props.file.open();
+			}
+		}, {
 			key: 'render',
 			value: function render() {
 				var _this6 = this;
@@ -23049,7 +23402,23 @@
 					file.name,
 					' (size: ',
 					file.size,
-					') //',
+					') --',
+					_react2.default.createElement(
+						'a',
+						{ href: '#', onClick: function onClick() {
+								console.log(_this6.props.file);
+							} },
+						'text'
+					),
+					' |',
+					_react2.default.createElement(
+						'a',
+						{ href: '#', onClick: function onClick() {
+								_this6.openFile();
+							} },
+						'open'
+					),
+					' |',
 					_react2.default.createElement(
 						'a',
 						{ href: '#', onClick: function onClick() {
@@ -23112,6 +23481,405 @@
 	
 		return FolderFileComponent;
 	}(_react2.default.Component);
+
+/***/ },
+/* 182 */
+/*!***************************************!*\
+  !*** ./src/app/components/desktop.js ***!
+  \***************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _react = __webpack_require__(/*! react */ 1);
+	
+	var _react2 = _interopRequireDefault(_react);
+	
+	var _software = __webpack_require__(/*! ./software.js */ 183);
+	
+	var _software2 = _interopRequireDefault(_software);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var Desktop = function (_React$Component) {
+		_inherits(Desktop, _React$Component);
+	
+		function Desktop(props) {
+			_classCallCheck(this, Desktop);
+	
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Desktop).call(this, props));
+	
+			_this.styles = {
+				globalEvent: {
+					shown: {
+						display: "block",
+						width: "100%",
+						backgroundColor: "yellow",
+						padding: "10px",
+						fontFamily: "Verdana",
+						fontWeight: "bold"
+					}
+				},
+				hidden: {
+					display: "none"
+				}
+			};
+	
+			_this.state = {
+				globalEvent: {
+					style: _this.styles.hidden
+				},
+				openSofts: []
+			};
+	
+			_this.props.eventMessage.callback = function () {
+				_this.eventMessage();
+			};
+			return _this;
+		}
+	
+		_createClass(Desktop, [{
+			key: 'eventMessage',
+			value: function eventMessage() {
+				var _this2 = this;
+	
+				var evmsg = this.props.eventMessage;
+	
+				if (evmsg.type == 'to-user') {
+					this.state.globalEvent.style = this.styles.globalEvent.shown;
+					this.setState(this.state.globalEvent);
+					setTimeout(function () {
+						_this2.state.globalEvent.style = _this2.styles.hidden;
+						_this2.setState(_this2.state.globalEvent);
+					}, this.props.eventMessage.timeMessage);
+				} else if (evmsg.type == 'open-software') {
+					this.state.openSofts.push(this.props.eventMessage.object);
+					this.setState({ openSofts: this.state.openSofts });
+				} else if (evmsg.type == 'close-software') {
+					var softIndex = this.state.openSofts.indexOf(this.props.eventMessage.object);
+					console.log("soft-index");
+					console.log(softIndex);
+					if (softIndex !== -1) {
+						this.state.openSofts.splice(softIndex, 1);
+						this.setState(this.state.openSofts);
+					}
+				}
+			}
+		}, {
+			key: 'render',
+			value: function render() {
+				var _this3 = this;
+	
+				var softComp = this.state.openSofts.map(function (s) {
+	
+					return _react2.default.createElement(_software2.default, { key: s.software.process.getPid(), software: s, eventMessage: _this3.props.eventMessage });
+				});
+	
+				return _react2.default.createElement(
+					'div',
+					{ id: 'desktop-os' },
+					_react2.default.createElement(
+						'div',
+						{ style: this.state.globalEvent.style },
+						' ',
+						this.props.eventMessage.message,
+						' '
+					),
+					_react2.default.createElement(
+						'ul',
+						null,
+						softComp
+					)
+				);
+			}
+		}]);
+	
+		return Desktop;
+	}(_react2.default.Component);
+	
+	exports.default = Desktop;
+
+/***/ },
+/* 183 */
+/*!****************************************!*\
+  !*** ./src/app/components/software.js ***!
+  \****************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _react = __webpack_require__(/*! react */ 1);
+	
+	var _react2 = _interopRequireDefault(_react);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var SoftwareComponent = function (_React$Component) {
+		_inherits(SoftwareComponent, _React$Component);
+	
+		function SoftwareComponent(props) {
+			_classCallCheck(this, SoftwareComponent);
+	
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SoftwareComponent).call(this, props));
+	
+			_this.software = _this.props.software.software;
+			_this.inParameter = _this.props.software.inParameter;
+			_this.interface = _this.props.software.interface;
+			return _this;
+		}
+	
+		_createClass(SoftwareComponent, [{
+			key: "closeSoft",
+			value: function closeSoft() {
+				this.props.software.close();
+				this.props.eventMessage.type = "close-software";
+				this.props.eventMessage.object = this.props.software;
+				this.props.eventMessage.callback();
+	
+				//File Unlocking
+				if (this.inParameter.file !== null) {
+					this.inParameter.file.unlockMe();
+				}
+			}
+		}, {
+			key: "render",
+			value: function render() {
+				var _this2 = this;
+	
+				return _react2.default.createElement(
+					"div",
+					{ style: { backgroundColor: "gray", width: "250px" } },
+					_react2.default.createElement(
+						"div",
+						null,
+						this.interface.header,
+						">",
+						_react2.default.createElement(
+							"div",
+							{ style: { float: "right" } },
+							" ",
+							_react2.default.createElement(
+								"a",
+								{ href: "#", onClick: function onClick() {
+										_this2.closeSoft();
+									} },
+								"[ close ]"
+							),
+							" "
+						)
+					),
+					this.interface.body(this.inParameter),
+					this.interface.footer
+				);
+			}
+		}]);
+	
+		return SoftwareComponent;
+	}(_react2.default.Component);
+	
+	exports.default = SoftwareComponent;
+
+/***/ },
+/* 184 */
+/*!***********************************************!*\
+  !*** ./src/app/components/process_monitor.js ***!
+  \***********************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	exports.Process = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _react = __webpack_require__(/*! react */ 1);
+	
+	var _react2 = _interopRequireDefault(_react);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var ProcessMonitor = function (_React$Component) {
+		_inherits(ProcessMonitor, _React$Component);
+	
+		function ProcessMonitor(props) {
+			_classCallCheck(this, ProcessMonitor);
+	
+			return _possibleConstructorReturn(this, Object.getPrototypeOf(ProcessMonitor).call(this, props));
+		}
+	
+		_createClass(ProcessMonitor, [{
+			key: "render",
+			value: function render() {
+				console.log("render-process-monitor");
+				console.log(this.props);
+	
+				var processes = this.props.prcPool.map(function (prc) {
+					return _react2.default.createElement(Process, { process: prc, key: prc.processInfo.pid });
+				});
+	
+				return _react2.default.createElement(
+					"div",
+					{ className: "os-state" },
+					_react2.default.createElement(
+						"ul",
+						null,
+						processes
+					)
+				);
+			}
+		}]);
+	
+		return ProcessMonitor;
+	}(_react2.default.Component);
+	
+	exports.default = ProcessMonitor;
+	
+	var Process = exports.Process = function (_React$Component2) {
+		_inherits(Process, _React$Component2);
+	
+		function Process() {
+			_classCallCheck(this, Process);
+	
+			return _possibleConstructorReturn(this, Object.getPrototypeOf(Process).apply(this, arguments));
+		}
+	
+		_createClass(Process, [{
+			key: "render",
+			value: function render() {
+				return _react2.default.createElement(
+					"li",
+					null,
+					"Pid: ",
+					this.props.process.processInfo.pid,
+					" | Name: ",
+					this.props.process.processInfo.name,
+					" | Mem: ",
+					this.props.process.processInfo.memory
+				);
+			}
+		}]);
+	
+		return Process;
+	}(_react2.default.Component);
+
+/***/ },
+/* 185 */
+/*!**************************************!*\
+  !*** ./src/app/softwares/rawtext.js ***!
+  \**************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+		value: true
+	});
+	
+	var _react = __webpack_require__(/*! react */ 1);
+	
+	var _react2 = _interopRequireDefault(_react);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var RawText = function RawText() {
+		_classCallCheck(this, RawText);
+	
+		this.software = {
+			name: "RawText",
+			description: "Reads raw file.",
+			extensions: ["any"],
+			size: 1,
+			process: null
+		};
+	
+		this.inParameter = {
+			text: null,
+			file: null
+		};
+	
+		this.interface = {
+			header: _react2.default.createElement(
+				"div",
+				null,
+				_react2.default.createElement(
+					"h3",
+					null,
+					this.software.name
+				)
+			),
+			body: function body(inParameter) {
+				var defaultValue = inParameter.file !== null ? inParameter.file.fileData.data : "";
+				return _react2.default.createElement(
+					"div",
+					null,
+					_react2.default.createElement(
+						"div",
+						null,
+						_react2.default.createElement("textarea", { defaultValue: defaultValue, onChange: function onChange(e) {
+								defaultValue = e.target.value;
+							} })
+					),
+					_react2.default.createElement(
+						"div",
+						null,
+						_react2.default.createElement(
+							"button",
+							{ onClick: function onClick() {
+									inParameter.file.save(defaultValue);
+								} },
+							"save changes"
+						)
+					)
+				);
+			}
+			/*(
+	  	//<div><textarea defaultValue={(this.inParameter.file !== null ? this.inParameter.file.fileData.data : "")}> </textarea></div>
+	  			<div><textarea defaultValue={this.inParameter.file.fileData.data}> </textarea></div>
+	  )*/
+			, footer: _react2.default.createElement(
+				"div",
+				null,
+				" RawText - Virtual Machine "
+			)
+		};
+	};
+	
+	exports.default = RawText;
 
 /***/ }
 /******/ ]);

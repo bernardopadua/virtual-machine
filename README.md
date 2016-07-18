@@ -4,6 +4,23 @@ The virtual machine is just at the beggining point with the client-side only. Ne
 
 And all this for learning and fun! :)
 
+## Updates
+
++ 1.0.0
+  + Created Process Monitor
+  + Created Desktop Component
+    + Attach event message;
+    + Open software on desktop area;
+  + Created Softwares
+    + Created default software RawText to open file data;
+  + EventMessage for Desktop
+    + Adpat to attach objects to communicate between VirtualMachine and Desktop;
+  + FileSystem
+    + Open File;
+  + OperatingSystem
+    + Many checks and locks to file;
+    + Check opened softwares;
+
 ## TO-DO
 
 + Client-Side

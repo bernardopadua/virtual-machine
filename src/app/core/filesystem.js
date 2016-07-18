@@ -50,6 +50,7 @@ export default class FileSystem {
 			unqId: FileSystem.getUniqId(),
 			name: file.fileInfo.name,
 			size: file.fileInfo.size,
+			data: file.fileData.data,
 			parentFolder: folder
 		}
 		var file = new File(fileInfo);
@@ -58,27 +59,33 @@ export default class FileSystem {
 	}
 
 	static createFile(name, data, size) {
-		var fileInfo = {
-			unqId: FileSystem.getUniqId(),
-			name: name,
-			size: size,
-			parentFolder: FileSystem.currentLocation
+		
+		if(FileSystem.currentLocation.folderInfo.files.find((tmpFile) => tmpFile.fileInfo.name == name) === undefined){
+			var fileInfo = {
+				unqId: FileSystem.getUniqId(),
+				name: name,
+				data: data,
+				size: size,
+				parentFolder: FileSystem.currentLocation
+			}
+			var file = new File(fileInfo);
+
+			BoundLink.setData('VM', {
+				type:'filesystem', 
+				action:'create-file',
+				size: size,
+				name: name,
+				callback: (()=>{ 
+					FileSystem.currentLocation.addFile(file); 
+					BoundLink.setData('VFS', {action: 'build-workspace'}); 
+					BoundLink.callReverse('VFS');
+				}) 
+			});
+
+			BoundLink.callReverse('VM');
+		} else {
+			BoundLink.setDataCall('VM', {type: "event-message", data: "File already exists!", time:1000});
 		}
-		var file = new File(fileInfo);
-
-		BoundLink.setData('VM', {
-			type:'filesystem', 
-			action:'create-file',
-			size: size,
-			name: name,
-			callback: (()=>{ 
-				FileSystem.currentLocation.addFile(file); 
-				BoundLink.setData('VFS', {action: 'build-workspace'}); 
-				BoundLink.callReverse('VFS');
-			}) 
-		});
-
-		BoundLink.callReverse('VM');
 	}
 
 	static createFolder(name){
@@ -118,7 +125,6 @@ export class Folder {
 	}
 
 	pasteFile(){
-		console.log(FileSystem.getClipboard());
 		if (FileSystem.getClipboard() !== null) {
 			var fileName = FileSystem.getClipboard().fileInfo.name;
 			var fileToPaste = FileSystem.getClipboard();
@@ -128,8 +134,7 @@ export class Folder {
 					action:'paste-file',
 					size: fileToPaste.fileInfo.size,
 					name: fileToPaste.fileInfo.name,
-					callback: (()=>{ 
-
+					callback: (()=>{
 						var newFile = FileSystem.cloneFile(fileToPaste, this);
 						this.addFile(newFile);
 						
@@ -145,6 +150,7 @@ export class Folder {
 		}
 		else 
 		{
+			BoundLink.setDataCall('VM', {type: 'event-message', data: "Clipboard is empty!"});
 			console.log("Clipboard is empty!");
 		}
 	}
@@ -170,11 +176,37 @@ export class File {
 			unqId: objFile.unqId,
 			name: objFile.name,
 			size: objFile.size,
-			parentFolder: objFile.parentFolder
-		}
+			extension: null,
+			parentFolder: objFile.parentFolder,
+			isOpen: false
+		};
 		this.fileData = {
-			data: null
+			data: objFile.data
+		};
+
+		//Get extension from file
+		var ext = this.fileInfo.name.split('.');
+		this.fileInfo.extension = (ext.length > 1 ? ext[ext.length-1] : "");
+	}
+
+	open(){
+		if (!this.fileInfo.isOpen) {
+			BoundLink.setDataCall('VM', {type: 'open-file', file: this});
+		} else {
+			BoundLink.setDataCall('VM', {type: 'event-message', data: "File already opened!", time: 2000});
 		}
+	}
+
+	lockMe(){
+		this.fileInfo.isOpen = true;
+	}
+
+	unlockMe(){
+		this.fileInfo.isOpen = false;
+	}
+
+	save(newText){
+		this.fileData.data = newText;
 	}
 
 	deleteFromFolder(){

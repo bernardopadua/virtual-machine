@@ -7,6 +7,11 @@ import FileSystem from './core/filesystem.js';
 //Components
 import OsState from './components/os_state.js';
 import VirtualFileSystem from './components/virtualfilesystem.js';
+import Desktop from './components/desktop.js';
+import ProcessMonitor from './components/process_monitor.js';
+
+//Default Software
+import RawText from './softwares/rawtext.js';
 
 class VirtualMachine extends React.Component {
 	constructor(props){
@@ -14,42 +19,79 @@ class VirtualMachine extends React.Component {
 
 		this.state = {
 			OS: null,
+			eventMessage: null,
 			vmSpecs: {
 				memory: "1024",
 				num_core:"1",
 				os_code:"1"
 			},
 			components: {
-				osState: null
+				osState: null,
+				processMonitor: null
 			}
 		};
 
+		//Open communicating channel
 		BoundLink.openChannel('VM', ()=>{this.openChannel();});
 	}
 
-	openChannel(){
-		console.log("message received");
+	openChannel() {
+		var boundData = BoundLink.getData('VM');
+
 		if (this.state.OS !== null) {
-
+			
 			//What action to take.
-			var boundData = BoundLink.getData('VM');
 			if (boundData.type == 'memory') {
-
 				if (boundData.action == 'allocate-memory') {
-					this.setState({components: { osState: this.state.OS.getSpecs() }});
+					this.state.components.osState = this.state.OS.getSpecs();
+					this.state.components.processMonitor = this.state.OS.getProcessPool();
+					this.setState(this.state.components);
 				} 
 				else if(boundData.action == 'error') {
 					console.log(boundData.error);
 				}
 
-			} else if (boundData.type == 'filesystem') {
-				var allProcess = this.state.OS.createProcess(boundData.action+"|"+boundData.name, boundData.type, boundData.size);
+			} 
+			else if (boundData.type == 'filesystem') {
+				var allProcess = this.state.OS.createProcess(boundData.action+"--"+boundData.name, boundData.type, boundData.size);
 				if (boundData.callback !== null) {
 					allProcess.setCallbackProcessing(boundData.callback);
 				}
 				this.state.OS.allocateProcess(allProcess);
 			}
+
+			//Setting message to desktop event message
+			if (boundData.type == 'event-message') {
+				var defaultTime = this.state.eventMessage.timeMessage;
+				this.state.eventMessage.timeMessage = (boundData.time === undefined ? defaultTime : boundData.time);
+				this.state.eventMessage.message = boundData.data;
+				this.state.eventMessage.type = 'to-user';
+				this.state.eventMessage.callback();
+			}
+
+			//Open file
+			if (boundData.type == 'open-file') {
+				this.state.OS.automaticFileOpen(boundData.file);
+			}
+
+			if (boundData.type == 'process-monitor') {
+				this.state.components.processMonitor = boundData.data;
+				this.setState(this.state.components.processMonitor);
+			}
+
 		}
+
+		//Setting event message object to desktop component
+		if (boundData.type == 'desktop') {
+			this.state.eventMessage = boundData.evtmsg;
+			this.setState(this.state);
+		}
+	}
+
+	//Installing default softwares
+	installSoftwares(){
+		var softRawText = new RawText();
+		this.state.OS.installSoftware(softRawText);
 	}
 
 	render() {
@@ -59,20 +101,35 @@ class VirtualMachine extends React.Component {
 				<h1>Virtual Machine - {this.state.components.osState.nameOS}</h1>
 				<p> hello, world! :) </p> 
 				<div> 
-					<label><h3>Virtual OsState</h3></label> 
-					<div id="os-state">
-						<OsState os={this.state.components.osState} />
+					<div id="os-monitors">
+						<div style={{float:"left", width: "30%"}}>
+							<label><h3>Virtual OsState</h3></label> 
+							<OsState os={this.state.components.osState} />
+						</div>
+						<div style={{float:"left", width: "50%"}}>
+							<label><h3>Process Monitor</h3></label> 
+							<ProcessMonitor prcPool={this.state.components.processMonitor} />
+						</div>
 					</div> 
 				</div>
 
-				<div> <button onClick={()=>{this.state.OS.processDummy(150);}}>OpenApp</button></div>
-				
-				<div> 
-					<label><h3>Virtual Filesystem</h3></label> 
-					<div id="work-space">
-						<VirtualFileSystem />
-					</div> 
+				<div style={{clear:"both"}}>
+					<ul id="vm-opts">
+						<li> <button onClick={()=>{this.state.OS.processDummy(150);}}>OpenApp</button> </li>
+						<li> <button onClick={(e)=>{this.installSoftwares(); e.target.parentNode.removeChild(e.target);}}>Install RawText</button> </li>
+					</ul>
 				</div>
+				
+				<div id="work-space">
+					<div style={{float: "left", width: "30%"}}>
+						<label><h3>Virtual Filesystem</h3></label> 
+						<VirtualFileSystem eventMessage={this.state.eventMessage} />
+					</div>
+					<div style={{float: "left", width: "70%", overflow: "hidden"}}>
+						<label><h3>Desktop</h3></label> 
+						<Desktop eventMessage={this.state.eventMessage} />
+					</div>
+				</div> 
 			</div>);
 		}
 		return (
@@ -82,12 +139,12 @@ class VirtualMachine extends React.Component {
 				<div> <label> Memory: </label> <input defaultValue={this.state.vmSpecs.memory} onChange={(e)=>{this.state.vmSpecs.memory = e.target.value;}} type='text' /> </div>
 				<div> <label> NumCores: </label> <input defaultValue={this.state.vmSpecs.num_core} onChange={(e)=>{this.state.vmSpecs.num_core = e.target.value;}} type='text' /> </div>
 				<div> <label> Operating System: </label> <input defaultValue={this.state.vmSpecs.os_code} onChange={(e)=>{this.state.vmSpecs.os_code = e.target.value;}} type='text' /> </div>
-				<button onClick={() => this.setComputer()}> Make My Computer </button>
+				<button onClick={() => this.setVirtualMachine()}> Make My Computer </button>
 			</div>
 		);
 	}
 
-	setComputer() {
+	setVirtualMachine() {
 		var tmpSpecs = this.state.vmSpecs;
 		var tmpOS = new OperatingSystem(tmpSpecs.memory, tmpSpecs.num_core);
 		
@@ -98,7 +155,10 @@ class VirtualMachine extends React.Component {
 		FileSystem.buildVirtualSpace();
 
 		//Rendering again
-		this.setState({OS: tmpOS, components: {osState: tmpOS.getSpecs()}});
+		this.state.OS = tmpOS;
+		this.state.components.osState = tmpOS.getSpecs();
+		this.state.components.processMonitor = tmpOS.getProcessPool();
+		this.setState(this.state);
 	}
 
 	refreshComputer(){

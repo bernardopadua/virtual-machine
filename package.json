@@ -1,16 +1,14 @@
 {
   "name": "virtual-machine",
   "version": "1.0.0",
-  "description": "Simple task manager.",
+  "description": "Simple Virtual Machine",
   "main": "index.js",
   "scripts": {
-    "build": "babel index.js --out-file indexcomp.js",
     "pack": "webpack -d"
   },
   "author": "Bernardo P. Oliveira",
   "license": "ISC",
   "dependencies": {
-    "promise": "^7.1.1",
     "react": "^15.2.1",
     "react-dom": "^15.2.1"
   },
