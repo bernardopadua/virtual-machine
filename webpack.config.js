@@ -1,29 +1,51 @@
-var webpack = require('webpack');
-var path = require('path');
+// Generated using webpack-cli https://github.com/webpack/webpack-cli
 
-var BUILD_DIR = path.resolve(__dirname, 'src/public');
-var APP_DIR = path.resolve(__dirname, 'src/app');
+const path = require('path');
 
-var config = {
-  entry: APP_DIR + '/index.js',
-  output: {
-    path: BUILD_DIR,
-    filename: 'bundle.js'
-  },
-  presets: ['react'],
-  module : {
-    loaders : [
-      {
-        test : /\.js?/,
-        include : APP_DIR,
-        loader : 'babel',
-        query: {
-          presets: ['es2015', 'react'],
-          plugins: ['transform-class-properties']
+const isProduction = process.env.NODE_ENV == 'production';
+
+
+const config = {
+    entry: './src/app/index.js',
+    output: {
+        path: path.resolve(__dirname, 'dist'),
+    },
+    devServer: {
+        open: true,
+        host: 'localhost',
+        port: 8091,
+        static: {
+            directory: path.join(__dirname, "")
         }
-      }
-    ]
-  }
+    },
+    plugins: [
+        // Add your plugins here
+        // Learn more about plugins from https://webpack.js.org/configuration/plugins/
+    ],
+    module: {
+        rules: [
+            {
+                test: /\.(eot|svg|ttf|woff|woff2|png|jpg|gif)$/i,
+                type: 'asset',
+            },
+            {
+                test: /\.m?js$/,
+                exclude: /node_modules/,
+                use: {
+                    loader: "babel-loader",
+                    options: { presets: ['@babel/preset-env'] }
+                }
+            }
+            // Add your rules for custom modules here
+            // Learn more about loaders from https://webpack.js.org/loaders/
+        ],
+    },
 };
 
-module.exports = config;
+module.exports = () => {
+    if (isProduction) 
+        config.mode = 'production'
+    else
+        config.mode = 'development';
+    return config;
+};
