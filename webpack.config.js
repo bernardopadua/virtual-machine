@@ -6,9 +6,10 @@ const isProduction = process.env.NODE_ENV == 'production';
 
 
 const config = {
-    entry: './src/app/index.js',
+    entry: './frontend/src/app/index.js',
     output: {
-        path: path.resolve(__dirname, 'dist'),
+        path: path.resolve(__dirname, 'backend/src_flask_server/flask_bps/templates/static_home/'),
+        filename: 'bundle.js'
     },
     devServer: {
         open: true,
@@ -35,6 +36,12 @@ const config = {
                     loader: "babel-loader",
                     options: { presets: ['@babel/preset-env'] }
                 }
+            },
+            {
+                test: /\.css$/i,
+                exclude: /node_modules/,
+                use: ["style-loader", "css-loader"]
+                
             }
             // Add your rules for custom modules here
             // Learn more about loaders from https://webpack.js.org/loaders/

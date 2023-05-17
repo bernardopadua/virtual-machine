@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block head %} 
+    <link rel="stylesheet" type="text/css" href="{{url_for('auth.static', filename='auth.css')}}" /> 
+    <script src="{{url_for('auth.static', filename='auth_register.js')}}"></script>
+{% endblock %}
+{% block content %}
+    <div class="gcontainer">
+        <div class="gitem">
+            <div class="box-login">
+                <form method="post">
+                    <ul class="list-input">
+                        <li style="display:none;">
+                            <input type="hidden" name="url-redirect-login" value="{{ url_for('auth.auth_login') }}" />
+                        </li>
+                        <li style="display:none;">
+                            <input type="hidden" name="url-post-login" value="{{ url_for('auth.register') }}" />
+                        </li>
+                        <li>Username: <input type="text" name="username" /></li>
+                        <li>Password: <input type="password" name="password" /></li>
+                        <li>
+                            <button type="button" class="btn-login btn-make-login">Register</button>
+                        </li>
+                        <li class="reg-message" style="display: none">
+
+                        </li>
+                    </ul>               
+                </form> 
+            </div>
+        </div>
+    </div>
+{% endblock %}

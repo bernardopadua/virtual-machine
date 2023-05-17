@@ -1,0 +1,36 @@
+.gcontainer {
+    display: grid;
+    grid-template-columns: repeat(6, 50px) auto repeat(6, 50px);
+}
+
+.gitem {
+    grid-column: 7 / 8;
+    justify-self: center;
+}
+
+.box-login {
+    box-sizing: border-box;
+    border-radius: 8px;
+
+    width: auto;
+}
+
+.list-input {
+    list-style: none;
+}
+
+.list-input li {
+    font-size: 16px;
+    font-weight: bold;
+    display: grid;
+    justify-content: center;
+}
+
+.btn-login {
+    width: 100px;
+    height: 30px;
+    border-radius: 10px;
+    border:none;
+    background-color: aquamarine;
+    margin:15px;
+}

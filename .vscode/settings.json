@@ -1,0 +1,5 @@
+{
+    "isort.interpreter": [
+        "/home/pimptech/workspace/venv/bin/python3"
+    ]
+}
