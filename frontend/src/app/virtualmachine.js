@@ -22,7 +22,8 @@ class VirtualMachine extends React.Component {
 	constructor(props){
 		super(props);
 
-        const token = (Object.hasOwn(props, "token")) ? props["token"] : '';
+        const token     = (Object.hasOwn(props, "token")) ? props["token"] : '';
+        const logoutUrl = props.logoutUrl;
 
 		this.state = {
 			OS: null,
@@ -39,14 +40,19 @@ class VirtualMachine extends React.Component {
 			},
             ws: new WebSocket("ws://localhost:8081/init?token="+token),
 
-            messageTop: ''
+            messageTop: '',
+
+            queueId: parseInt('0x1', 16),
+            queue: {}
 		};
 
         //Initializing websocket
         this.wsReconnects = {
             MAX_TRIES: 5,
             RECONNECTS: 0,
-            TIME_ITERATION: 1000
+            TIME_ITERATION: 1000,
+            connected: false,
+            logoutUrl: logoutUrl
         };
         this.iterateWsState();
 
@@ -65,12 +71,21 @@ class VirtualMachine extends React.Component {
         setTimeout(() => {
             if(this.state.ws.readyState==1){
                 this.state.ws.addEventListener("message", this.wsMessageRecv);
+                this.state.ws.addEventListener("close", this.wsClosed);
+                
                 this.setState({messageTop: 'asas'}, this.hideTopMessage);
+                
+                this.wsReconnects.connected = true;
+
+                this.wsSendMessage({operation: 'openfile', filePath: "/ab.txt"});
                 return;
             }
 
-            if(this.wsReconnects.MAX_TRIES >= this.wsReconnects.RECONNECTS){
-                this.setState({messageTop: 'asas2'}, this.hideTopMessage);
+            if(this.wsReconnects.MAX_TRIES >= this.wsReconnects.RECONNECTS && this.state.ws.readyState!=0){
+                this.setState({messageTop: 'There is a problem with connection, please try login again.\nRedirecting to logout...'}, this.hideTopMessage);
+                setTimeout(() => {
+                    window.location = this.wsReconnects.logoutUrl;    
+                }, 2000);
             } else if(this.state.ws.readyState==0){
                 this.wsReconnects.RECONNECTS++;
                 this.iterateWsState();
@@ -79,7 +94,18 @@ class VirtualMachine extends React.Component {
     }
 
     wsMessageRecv(data) {
-        console.log(data);
+        console.log("DATA INCOMING:: ", data);
+    }
+
+    wsSendMessage(data) {
+        this.state.ws.send(JSON.stringify(data));
+    }
+
+    wsClosed(){
+        this.setState({messageTop: 'There is a problem with connection, please try login again.\nRedirecting to logout...'}, this.hideTopMessage);
+        setTimeout(() => {
+            window.location = this.wsReconnects.logoutUrl;    
+        }, 2000);
     }
 
 	openChannel() {
@@ -155,7 +181,7 @@ class VirtualMachine extends React.Component {
 						</div>
 						<div style={{float:"left", width: "50%"}}>
 							<label><h3>Process Monitor</h3></label> 
-							<ProcessMonitor prcPool={this.state.components.processMonitor} />
+							<ProcessMonitor ws={this.state.ws} prcPool={this.state.components.processMonitor} />
 						</div>
 					</div> 
 				</div>

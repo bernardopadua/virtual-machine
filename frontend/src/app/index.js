@@ -7,5 +7,6 @@ import VirtualMachine from './virtualmachine.js';
 
 const container = document.getElementById('app');
 const userToken = document.getElementById('user-token').value;
+const logoutUrl = document.getElementById('logout-url').value;
 const root      = createRoot(container);
-root.render(<VirtualMachine token={userToken} />);
+root.render(<VirtualMachine token={userToken} logoutUrl={logoutUrl} />);

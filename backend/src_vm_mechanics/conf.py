@@ -9,3 +9,7 @@ class MONGO_DB_COLLECTIONS(Enum):
     userprograms      = "users_programs"
     userpgrcollection = "user{}_programs"
     userpgrConn        = MONGO_DB_STRING_CONN+"users_programs"
+
+
+REDIS_HOST = "10.5.0.5"
+REDIS_PORT = 6379

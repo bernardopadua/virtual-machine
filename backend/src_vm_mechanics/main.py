@@ -1,12 +1,14 @@
-import asyncio
-import websockets
-import http
-from urllib.parse import urlparse, parse_qs
 from websockets.datastructures import Headers
 from websockets.legacy.server import WebSocketServerProtocol
 from websockets.exceptions import ConnectionClosed
 
 from core.OS import OperatingSystem, Pqueue
+from conf import REDIS_HOST, REDIS_PORT
+from redis_constants import USER_SESSION_WEBSOCKET
+
+import asyncio, http, websockets, json
+from redis import Redis
+from urllib.parse import urlparse, parse_qs
 
 # example using create_protocol on serve function
 class Middleware(WebSocketServerProtocol):
@@ -14,14 +16,34 @@ class Middleware(WebSocketServerProtocol):
         url = urlparse(path)
         if url.path != '/init':
             return http.HTTPStatus.BAD_REQUEST, [], b"Malformed request"
+        
         qs = parse_qs(url.query)
-        self.user_os = None
-        pass
+
+        #redis connection
+        redis   = Redis(host=REDIS_HOST, port=REDIS_PORT)
+        session = json.loads(redis.get(qs["token"][0]).decode())
+
+        self.computer = session
+        self.user_os  = OperatingSystem(
+            session["usu_id"],
+            memQtd=session["mem_size"],
+            hdSize=session["hd_size"],
+            cpuCores=session["cpu_cores"],
+            cpuPower=session["cpu_power"],
+            osMemory=session["os_memory"],
+            osName=session["os_name"],
+            ws=self
+        )
 
 async def handler(ws: WebSocketServerProtocol):
     try:
         async for msg in ws:
-            #msg = ws.recv()
+            data = json.loads(msg)
+            _os:OperatingSystem  = ws.user_os
+            _os.enqueueProcess(data)
+            
+            await _os.processQueue()
+
             print(f"sds:: {msg}")
             print(msg)
     except ConnectionClosed as cncl:

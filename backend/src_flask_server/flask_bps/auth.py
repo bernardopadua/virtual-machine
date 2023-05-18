@@ -62,12 +62,15 @@ def auth_login():
 
             c.execute(
                 """
-                    SELECT cmp.comp_id, cpu.cpu_power, cpu.cpu_cores, mem.mem_size 
-                    FROM vm_users uu, vm_computer cmp, vm_cpu cpu, vm_memory mem
+                    SELECT uu.id usu_id, cmp.comp_id, cmp.hd_size, 
+                           oos.os_name, oos.os_memory, cpu.cpu_power, 
+                           cpu.cpu_cores, mem.mem_size 
+                    FROM vm_users uu, vm_computer cmp, vm_cpu cpu, vm_memory mem, vm_os oos
                     WHERE uu.id = %s
                     AND cmp.usu_id = uu.id
                     AND cmp.cpu_id = cpu.cpu_id
                     AND cmp.mem_id = mem.mem_id
+                    AND cmp.os_id  = oos.os_id
                 """,
                 (u[0]["id"],)
             )
@@ -78,12 +81,12 @@ def auth_login():
 
             token_hash = base64.urlsafe_b64encode(
                 hashlib.sha256(f"{u[0]['username']}:{u[0]['id']}:{time.time()}".encode()).digest()
-            )
+            ).decode()
 
             session["user"]       = u[0]
             session["user_token"] = token_hash
 
-            get_redis().set(USER_SESSION_WEBSOCKET.format(u[0]["id"]), json.dumps(dict(comp[0])))
+            get_redis().set(token_hash, json.dumps(dict(comp[0])))
 
             return jsonify({
                 "success": True,

@@ -11,6 +11,14 @@
             "program": "/home/pimptech/workspace/virtual-machine/backend/src_flask_server/flask_server.py",
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Websockets",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/pimptech/workspace/virtual-machine/backend/src_vm_mechanics/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }

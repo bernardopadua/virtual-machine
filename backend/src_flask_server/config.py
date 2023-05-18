@@ -4,7 +4,7 @@ SECRET_KEY="verycomplicated"
 PERMANENT_SESSION_LIFETIME=timedelta(days=5)
 DATABASE="postgresql://vmachine:vmachine@10.5.0.3"
 
-REDIS_HOST = "localhost"
+REDIS_HOST = "10.5.0.5"
 REDIS_PORT = 6379
 
 # DEFAULTS
