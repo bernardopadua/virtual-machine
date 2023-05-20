@@ -16,7 +16,7 @@ class Middleware(WebSocketServerProtocol):
         url = urlparse(path)
         if url.path != '/init':
             return http.HTTPStatus.BAD_REQUEST, [], b"Malformed request"
-        
+
         qs = parse_qs(url.query)
 
         #redis connection
@@ -39,10 +39,16 @@ async def handler(ws: WebSocketServerProtocol):
     try:
         async for msg in ws:
             data = json.loads(msg)
+            
+            ws.send("sdsdsdsdsd")
             _os:OperatingSystem  = ws.user_os
             _os.enqueueProcess(data)
             
-            await _os.processQueue()
+            task = asyncio.create_task(_os.processQueue())
+
+            await _os.joinQueue()
+
+            task.cancel()
 
             print(f"sds:: {msg}")
             print(msg)
@@ -51,17 +57,14 @@ async def handler(ws: WebSocketServerProtocol):
     except Exception as e:
         print(f"\n\tCommon error: {e}\n")
 
+async def handlerr(ws):
+    async for msg in ws:
+        await ws.send(msg)
+
 async def main():
-    #async with websockets.serve(handler, "localhost", 8081):
+    #async with websockets.serve(handlerr, "localhost", 8081):
     async with websockets.serve(handler, "", 8081, create_protocol=Middleware):
         await asyncio.Future()
-
-async def nmain():
-    n = OperatingSystem(1)
-    n.enqueueProcess({"operation": Pqueue.OFI.value, "filePath": "/ab.txt"})
-    
-    await n.processQueue()
-    await n.joinQueue()
 
 if __name__=="__main__":
     asyncio.run(main()) #do this when computer turns on

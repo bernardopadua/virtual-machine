@@ -70,14 +70,9 @@ class VirtualMachine extends React.Component {
     iterateWsState() {
         setTimeout(() => {
             if(this.state.ws.readyState==1){
-                this.state.ws.addEventListener("message", this.wsMessageRecv);
-                this.state.ws.addEventListener("close", this.wsClosed);
-                
-                this.setState({messageTop: 'asas'}, this.hideTopMessage);
-                
+                this.state.ws.addEventListener("message", this.wsMessageRecv.bind(this));
+                this.state.ws.addEventListener("close", this.wsClosed.bind(this));
                 this.wsReconnects.connected = true;
-
-                this.wsSendMessage({operation: 'openfile', filePath: "/ab.txt"});
                 return;
             }
 
@@ -101,7 +96,7 @@ class VirtualMachine extends React.Component {
         this.state.ws.send(JSON.stringify(data));
     }
 
-    wsClosed(){
+    wsClosed(e){
         this.setState({messageTop: 'There is a problem with connection, please try login again.\nRedirecting to logout...'}, this.hideTopMessage);
         setTimeout(() => {
             window.location = this.wsReconnects.logoutUrl;    
@@ -181,7 +176,7 @@ class VirtualMachine extends React.Component {
 						</div>
 						<div style={{float:"left", width: "50%"}}>
 							<label><h3>Process Monitor</h3></label> 
-							<ProcessMonitor ws={this.state.ws} prcPool={this.state.components.processMonitor} />
+							<ProcessMonitor ws={this.state.ws} />
 						</div>
 					</div> 
 				</div>
@@ -222,12 +217,64 @@ class VirtualMachine extends React.Component {
                     </div>
                 </div>
                 <div className='gitem-processpoll'>
-                    pool
+                    <ProcessMonitor ws={this.state.ws} />
                 </div>
                 <div className='gitem-window'>
-                    {
-                        //Component program
-                    }
+                    <ul className='flex-container-list-files'>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                        <li>sss</li>
+                    </ul>
                 </div>
                 <div className='gitem-end' onClick={()=>{
                     console.log("test");

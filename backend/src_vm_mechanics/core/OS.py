@@ -41,20 +41,37 @@ class OperatingSystem(Kernel):
         self.processPid  = 1
         self.processPool = []
         #default process
-        self.addProcessRunning(osName, osMemory)
+        self.addProcessRunning_noWait(osName, osMemory)
 
         self.ws = ws
+        self.nsend = None
 
         self.__os = self #kernel
         
         self.__loopQueue  = asyncio.Queue()
         self.isProcessing = False
 
-    def addProcessRunning(self, name:str, memory:int):
-        self.processPool.append(
-            Process(pid=self.processPid, name=name, memory=memory)
-        )
-        self.processPid += 1
+    def addProcessRunning_noWait(self, name:str, memory:int):
+        total_mem_used = sum([p.memory for p in self.processPool])
+        
+        if ((self.memQtd - total_mem_used) - memory) >= 0:
+            self.processPool.append(
+                Process(pid=self.processPid, name=name, memory=memory)
+            )
+            self.processPid += 1
+        else: 
+            pass # ?
+    
+    async def addProcessRunning(self, name:str, memory:int):
+        total_mem = sum([p.memory for p in self.processPool])
+        
+        if (total_mem - memory) >= 0:
+            self.processPool.append(
+                Process(pid=self.processPid, name=name, memory=memory)
+            )
+            self.processPid += 1
+        else: 
+            pass # ?
 
     async def joinQueue(self):
         await self.__loopQueue.join()
@@ -79,23 +96,25 @@ class OperatingSystem(Kernel):
         try:
             while True:
                 self.isProcessing = True
-                task = self.__loopQueue.get_nowait()
+                task = await self.__loopQueue.get()
 
                 if not task:
                     self.__loopQueue.task_done()
 
-                print(f"Get queue {task} and sleeping")
-                asyncio.sleep(5)
-                print("slept 5 seconds...")
+                # print(f"Get queue {task} and sleeping")
+                # asyncio.sleep(5)
+                # print("slept 5 seconds...")
                 #parse dict
                 match task['operation']:
                     case Pqueue.OPENFILE.value:
                         result = await self.getFile(task['filePath'])
-                        self.ws.send(json.dumps({"operation": Pqueue.OFI.value, "contents": result}))
+                        await self.ws.send(json.dumps({"operation": Pqueue.OPENFILE.value, "contents": result}))
                     case Pqueue.LISTPROC.value:
                         processes = [f.toJSON() for f in self.processPool]
-                        self.ws.send(json.dumps({"operation": Pqueue.LISTPROC.value, "contents": processes}))
+                        await self.ws.send(json.dumps({"operation": Pqueue.LISTPROC.value, "contents": processes}))
 
                 self.__loopQueue.task_done()
-        except asyncio.QueueEmpty as e:
+        except Exception as e:
+            print(f"Original error:: {e}")
+        finally:
             self.isProcessing = False

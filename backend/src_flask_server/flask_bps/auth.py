@@ -31,6 +31,8 @@ def should_be_logged(func):
 
 @bp.route("/logout", methods=("GET", "POST"))
 def auth_logout():
+    r = get_redis()
+    r.delete(session["user_token"])
     session.clear()
     return redirect(url_for("auth.auth_login"))
 
