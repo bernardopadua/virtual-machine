@@ -1,1 +1,9 @@
-./node_modules
+node_modules
+postgres
+redis
+code_tests
+TODOs.md
+./.vscode/launch.json
+backend/src_flask_server/flask_bps/templates/static_home/bundle.js
+
+__pycache__*

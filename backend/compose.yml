@@ -1,0 +1,60 @@
+version: "3.3"
+
+networks:
+  vmachine:
+    external: false
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+
+services:
+  db:
+    image: postgres:14
+    restart: always
+    environment:
+      - POSTGRES_USER=vmachine
+      - POSTGRES_PASSWORD=vmachine
+      - POSTGRES_DB=vmachine
+    networks: 
+      vmachine:
+        ipv4_address: 10.5.0.3
+    volumes:
+      - ~/workspace/virtual-machine/postgres:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    ports: 
+      - "8063:8063"
+    networks: 
+      vmachine:
+        ipv4_address: 10.5.0.4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: secret
+      PGADMIN_LISTEN_PORT: 8063
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    networks: 
+      vmachine:
+        ipv4_address: 10.5.0.5
+    ports:
+      - "6379:6379"
+    volumes:
+      - ~/workspace/virtual-machine/redis:/data
+  
+  mongodb:
+    image: mongo
+    networks: 
+      vmachine:
+        ipv4_address: 10.5.0.6
+    ports:
+      - 27017:27017
+    volumes:
+      - /home/mongodb:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=my_db
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=secret

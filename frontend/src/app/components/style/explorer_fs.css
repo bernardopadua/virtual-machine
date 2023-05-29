@@ -1,0 +1,40 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+  
+.efs-container{
+    width: 100%;
+    height: 100%;
+}
+
+.efs-item-banner {
+    display:flex;
+    flex-direction: column;
+}
+.efs-item-banner h2 {
+    flex-grow: 1;
+}
+
+.efs-item-explorer {
+    display:flex;
+    list-style: none;
+    gap: 20px;
+
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.efs-item-filefolder {
+    flex-shrink: 1;
+}
+
+.input-folder-label {
+    display: table-cell;
+    width: 1px;
+}
+
+.input-folder {
+    width: 99%;
+    display: table-cell;
+}

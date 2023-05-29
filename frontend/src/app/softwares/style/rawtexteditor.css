@@ -1,0 +1,15 @@
+.container-rwt {
+    display:flex;
+    flex-flow: column;
+    row-gap: 2px;
+}
+
+.rwt-smitem-body {
+    width: fit-content;
+    height: fit-content;
+}
+
+.rwt-smitem-body textarea {
+    width: 200px;
+    height: 100px;
+}

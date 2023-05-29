@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Virtual Machine - Version 1.0.0</title>
+    </head>
+    <body>
+        <input id="user-token" name="user-token" type="hidden" value="{{token}}" />
+        <input id="logout-url" name="user-token" type="hidden" value="{{url_for('auth.auth_logout')}}" />
+        <div id="app"></div>
+        <script type="text/javascript" src="{{url_for('home.static', filename='bundle.js')}}"></script>
+        <style type="text/css">
+            #vm-opts li {
+                display: inline;
+            }
+        </style>
+
+    </body>
+</html>

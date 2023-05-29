@@ -1,0 +1,111 @@
+* {
+    padding: 0;
+    margin: 0;
+}
+
+.smcontainer-flex {
+    display: flex;
+    flex-flow: column;
+    justify-content: flex-end;
+    align-items: center;
+
+    row-gap: 5px;
+    column-gap: 10px;
+
+    width: 100%;
+    height: 100%;
+}
+
+.smitem-flex {
+
+}
+
+.smcontainer {
+    display: grid;
+    grid-template-rows: auto;
+    grid-template-columns: auto;
+}
+
+.smitem {
+    grid-row-start: auto;
+}
+
+.gcontainer {
+    display: grid;
+    grid-template-columns: repeat(6, 50px) auto repeat(6, 50px);
+    grid-template-rows: repeat(6, 50px) auto repeat(6, 50px) 30px;
+    border: red;
+    background-color: rgb(193, 253, 233);
+}
+
+.gitem-a {
+    grid-column-start: 1;
+    grid-column-end: 3;    
+}
+.gitem-end {
+    grid-column-start: 1;
+    grid-column-end: 4;
+    grid-row-start: 14;
+    grid-row-end: 16;
+    background-color: bisque;
+}
+
+.gitem-infront {
+    z-index: 2;
+    grid-column-start: 1;
+    grid-column-end: 4;
+    grid-row-start: 5;
+    grid-row-end: 14;
+    background-color: white;
+}
+
+.gitem-processpoll {
+    grid-column: 10 / 14;
+    grid-row: 1 / 6;
+    background-color: burlywood;
+}
+
+.gitem-window {
+    grid-column: 7 / 8;
+    grid-row: 2 / 8;
+    background-color: coral;
+}
+
+.gitem-window-second {
+    grid-column: 7 / 8;
+    grid-row: 8 / 14;
+    background-color: rgb(252, 191, 169);
+}
+
+.flex-container-list-files {
+    list-style: none;
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-evenly;
+    align-items: center;
+
+    row-gap: 5px;
+    column-gap: 10px;
+
+    width: 100%;
+    height: 100%;
+}
+
+.flex-container-list-files li {
+    width: 50px;
+}
+
+.gitem-programs-flex {
+    display: flex;
+    flex-flow: row;
+    flex-wrap: wrap;
+
+    height: 100%;
+
+    overflow: hidden;
+    overflow-y: scroll;
+}
+
+.program-flex-item {
+    flex-grow: 1;
+}
