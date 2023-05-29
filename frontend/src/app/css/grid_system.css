@@ -3,6 +3,23 @@
     margin: 0;
 }
 
+.smcontainer-flex {
+    display: flex;
+    flex-flow: column;
+    justify-content: flex-end;
+    align-items: center;
+
+    row-gap: 5px;
+    column-gap: 10px;
+
+    width: 100%;
+    height: 100%;
+}
+
+.smitem-flex {
+
+}
+
 .smcontainer {
     display: grid;
     grid-template-rows: auto;
@@ -18,7 +35,7 @@
     grid-template-columns: repeat(6, 50px) auto repeat(6, 50px);
     grid-template-rows: repeat(6, 50px) auto repeat(6, 50px) 30px;
     border: red;
-    background-color: aquamarine;
+    background-color: rgb(193, 253, 233);
 }
 
 .gitem-a {
@@ -54,6 +71,11 @@
     background-color: coral;
 }
 
+.gitem-window-second {
+    grid-column: 7 / 8;
+    grid-row: 8 / 14;
+    background-color: rgb(252, 191, 169);
+}
 
 .flex-container-list-files {
     list-style: none;
@@ -71,4 +93,19 @@
 
 .flex-container-list-files li {
     width: 50px;
+}
+
+.gitem-programs-flex {
+    display: flex;
+    flex-flow: row;
+    flex-wrap: wrap;
+
+    height: 100%;
+
+    overflow: hidden;
+    overflow-y: scroll;
+}
+
+.program-flex-item {
+    flex-grow: 1;
 }

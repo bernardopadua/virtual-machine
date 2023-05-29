@@ -2,9 +2,6 @@ import Hardware from '../computer/hardware.js';
 import Kernel from './kernel.js';
 import BoundLink from './boundlink.js';
 
-import Process from './process.js';
-import Software from './software.js';
-
 export default class OperatingSystem {
 
 	constructor(memory, num_cores){

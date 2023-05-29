@@ -19,7 +19,7 @@ $(()=>{
 
                     setTimeout(()=>{
                         window.location = $("input[name='url-redirect-login']").val();
-                    }, 4000);
+                    }, 2000);
                     
                 }
             },

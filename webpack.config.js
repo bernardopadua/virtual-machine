@@ -1,9 +1,9 @@
 // Generated using webpack-cli https://github.com/webpack/webpack-cli
 
 const path = require('path');
+const webpack = require('webpack');
 
 const isProduction = process.env.NODE_ENV == 'production';
-
 
 const config = {
     entry: './frontend/src/app/index.js',
@@ -49,10 +49,20 @@ const config = {
     },
 };
 
-module.exports = () => {
+module.exports = (env, argv) => {
+    console.log('----------------------------\n',env,'\n------------------------\n');
+    
     if (isProduction) 
         config.mode = 'production'
     else
         config.mode = 'development';
+    
+    config.plugins = [
+        ...config.plugins,
+        new webpack.DefinePlugin({
+            'process.env': JSON.stringify(env)
+        })
+    ];
+    
     return config;
 };

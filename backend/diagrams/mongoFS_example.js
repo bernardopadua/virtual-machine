@@ -1,11 +1,13 @@
 var file_example = {
-    userId: 1, 
+    userId: 3, 
     fileOrFolder: "fl", 
+    fileType: 'txt',
     fileName: "ab",
     filePath: "/ab.txt",
     folder: "/", 
     fileContents: "ababab",
-    folderName: null
+    folderName: null,
+    program: null //program
 };
 
 var folder_example = {

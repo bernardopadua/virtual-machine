@@ -4,7 +4,7 @@
   "description": "Virtual machine",
   "main": "index.js",
   "scripts": {
-    "bdev": "webpack --mode=development",
+    "bdev": "webpack --mode=development --env WSSERVER_H=localhost --env WSSERVER_P=8081",
     "bprod": "webpack --mode=production --node-env=production",
     "serve": "webpack serve"
   },

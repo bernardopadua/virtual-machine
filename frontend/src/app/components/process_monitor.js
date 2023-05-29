@@ -65,6 +65,12 @@ export default class ProcessMonitor extends React.Component {
                         return <Process process={obj} key={obj.pid} />
                     })}
 				</ul>
+                <button type='button' onClick={()=>{
+                    this.tries = 0;
+                    this.grabProcesses();
+                }}>
+                    refresh
+                </button>
 			</div>
 		);
 	}

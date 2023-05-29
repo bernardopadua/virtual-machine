@@ -9,3 +9,11 @@
     background-color: rgb(241, 191, 191);
     text-align: center;
 }
+
+.box-message-top-green {
+    background-color: rgb(138, 247, 134) !important;
+}
+
+.box-message-top-yellow {
+    background-color: rgb(248, 246, 124) !important;
+}

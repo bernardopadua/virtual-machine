@@ -19,7 +19,7 @@ $(()=>{
                     if(response.success){
                         setTimeout(() => {
                             window.location = $("input[name='url-redirect-home']").val();
-                        }, 4000);
+                        }, 2000);
                     }
                 }
             },

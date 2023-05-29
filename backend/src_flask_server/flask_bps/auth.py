@@ -9,6 +9,10 @@ from redis_constants import USER_SESSION_WEBSOCKET
 from werkzeug.security import check_password_hash
 from werkzeug.security import generate_password_hash
 
+from pymongo import MongoClient
+
+from flask_bps.constants_vm_mechanics import TProgs
+
 from functools import wraps
 import hashlib, time, base64, json
 
@@ -110,6 +114,7 @@ def register():
         user     = formData['username']
         pasw     = generate_password_hash(formData['password'])
         db       = get_db()
+        mongo    = MongoClient(current_app.config['MONGO_STR_CONNECT'])
 
         try:
             c = get_cursor()
@@ -133,6 +138,22 @@ def register():
                     %s
                 )
             """, (current_app.config["HD_SIZE_DEFAULT"], _user_id,))
+            
+            user_collection = mongo[current_app.config['MONGO_USER_FS']]\
+                [str(current_app.config['MONGO_USERFS_COLLECTION']).format(_user_id)]
+            
+            user_collection.insert_one(
+                {
+                    "userId": _user_id, 
+                    "fileOrFolder": "fl", 
+                    "fileName": "RawTextInstaller",
+                    "folder": "/", 
+                    "fileContents": None,
+                    "folderName": None,
+                    "program": TProgs.rwt.value
+                }
+            )
+
             db.commit()
 
             return jsonify({

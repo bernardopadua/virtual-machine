@@ -39,8 +39,7 @@ async def handler(ws: WebSocketServerProtocol):
     try:
         async for msg in ws:
             data = json.loads(msg)
-            
-            ws.send("sdsdsdsdsd")
+
             _os:OperatingSystem  = ws.user_os
             _os.enqueueProcess(data)
             
@@ -49,9 +48,6 @@ async def handler(ws: WebSocketServerProtocol):
             await _os.joinQueue()
 
             task.cancel()
-
-            print(f"sds:: {msg}")
-            print(msg)
     except ConnectionClosed as cncl:
         print("Connection closed...")
     except Exception as e:
