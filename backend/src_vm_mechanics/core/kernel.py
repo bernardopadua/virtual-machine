@@ -60,7 +60,7 @@ class Kernel:
         if result.modified_count == 0 and result.matched_count >= 1:
             return {
                 "success": False,
-                "message": "File saved, but reamained with the same content."
+                "message": "File saved, but remained with the same content."
             }
         elif result.modified_count >= 1:
             return {
