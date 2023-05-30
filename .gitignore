@@ -1,6 +1,8 @@
 node_modules
 postgres
 redis
+mongodb
+
 code_tests
 TODOs.md
 ./.vscode/launch.json

@@ -1,14 +1,16 @@
 # Virtual Machine
 
-**Project droped, working on a new one.**
+Just a resemblance of a virtual-machine, is actually not a good name, since it's not like a real virtual-machine. It's only purpose it's to practice and learning. 
 
-It's a very simple virtual machine with basic operations. It works as a page application to interact with virtual arbitrary data.
-The virtual machine is just at the beggining point with the client-side only. Next goal is to build a server in golang to interconnect with other virtual machines.
+## Using
 
-And all this for learning and fun! :)
+Soon..
 
 ## Updates
 
++ 2.0.0
+  + Mirrored all actions of pure React to a server-side with more robust access with Websockets.
+    + All session maintained using redis and mongodb. Now with login/registration.
 + 1.0.0
   + Created Process Monitor
   + Created Desktop Component

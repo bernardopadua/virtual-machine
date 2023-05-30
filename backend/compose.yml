@@ -53,7 +53,7 @@ services:
     ports:
       - 27017:27017
     volumes:
-      - /home/mongodb:/data/db
+      - ~/workspace/virtual-machine/mongodb:/data/db
     environment:
       - MONGO_INITDB_DATABASE=my_db
       - MONGO_INITDB_ROOT_USERNAME=admin
