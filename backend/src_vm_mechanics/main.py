@@ -59,7 +59,7 @@ async def handlerr(ws):
 
 async def main():
     #async with websockets.serve(handlerr, "localhost", 8081):
-    async with websockets.serve(handler, "", 8081, create_protocol=Middleware):
+    async with websockets.serve(handler, "0.0.0.0", 8081, create_protocol=Middleware):
         await asyncio.Future()
 
 if __name__=="__main__":

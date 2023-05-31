@@ -2,6 +2,7 @@ version: "3.3"
 
 networks:
   vmachine:
+    driver: bridge
     external: false
     ipam:
       config:
@@ -58,3 +59,37 @@ services:
       - MONGO_INITDB_DATABASE=my_db
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=secret
+  
+  websocket:
+    image: websocket:v1
+    build:
+      context: .
+      dockerfile: ./backend/infra/Dockerfile.websocket
+    ports:
+      - 8081:8081
+    networks: 
+      vmachine:
+        ipv4_address: 10.5.0.8
+    depends_on:
+      - db
+      - mongodb
+      - redis
+
+  flask_server:
+    image: flask_server:v1
+    build:
+      context: .
+      dockerfile: ./backend/infra/Dockerfile.flask_server
+    ports:
+      - 8064:8064
+    networks: 
+      vmachine:
+        ipv4_address: 10.5.0.7
+    environment:
+      - WSSERVER_H=10.5.0.8
+      - WSSERVER_P=8081
+    depends_on:
+      - db
+      - mongodb
+      - redis
+      - websocket

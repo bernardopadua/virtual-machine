@@ -4,7 +4,6 @@ from flask import (
     redirect, url_for, current_app
 )
 from flask_server import get_db, get_cursor, get_redis
-from redis_constants import USER_SESSION_WEBSOCKET
 
 from werkzeug.security import check_password_hash
 from werkzeug.security import generate_password_hash
@@ -101,6 +100,7 @@ def auth_login():
 
         except Exception as e:
             print(f"Original error:: {e}") #logging
+                        
         finally:
             c.close()
 

@@ -6,9 +6,9 @@ const webpack = require('webpack');
 const isProduction = process.env.NODE_ENV == 'production';
 
 const config = {
-    entry: './frontend/src/app/index.js',
+    entry: './src/app/index.js',
     output: {
-        path: path.resolve(__dirname, 'backend/src_flask_server/flask_bps/templates/static_home/'),
+        path: path.resolve(__dirname, '../backend/src_flask_server/flask_bps/templates/static_home/'),
         filename: 'bundle.js'
     },
     devServer: {
@@ -57,10 +57,17 @@ module.exports = (env, argv) => {
     else
         config.mode = 'development';
     
+    const WSSERVER_H = process.env.WSSERVER_H || env.WSSERVER_H;
+    const WSSERVER_P = process.env.WSSERVER_P || env.WSSERVER_P;
+
     config.plugins = [
         ...config.plugins,
         new webpack.DefinePlugin({
-            'process.env': JSON.stringify(env)
+            'process.env': JSON.stringify({
+                ...env,
+                WSSERVER_H: WSSERVER_H,
+                WSSERVER_P: WSSERVER_P
+            })
         })
     ];
     

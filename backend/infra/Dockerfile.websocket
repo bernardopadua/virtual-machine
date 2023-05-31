@@ -1,0 +1,14 @@
+FROM python:3.10-alpine3.17
+
+COPY ./backend/src_vm_mechanics /src/
+COPY ./backend/infra/entry.websocket.entrypoint.sh /src/entry.websocket.entrypoint.sh
+COPY ./backend/infra/entry.websocket.install.sh /src/entry.websocket.install.sh
+
+WORKDIR /src/
+
+RUN chmod +x ./entry.websocket.install.sh
+RUN ./entry.websocket.install.sh
+
+RUN python -m pip install -r requirements.txt
+
+ENTRYPOINT ["bash", "entry.websocket.entrypoint.sh"]

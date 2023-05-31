@@ -25,7 +25,7 @@ $(()=>{
             },
             error: function(jqXHR, textStatus, errorThrown) {
                 const rJson = jqXHR.responseJSON;
-                if(Object.hasOwn(rJson, "success")){
+                if(Object.hasOwn(rJson, "success") && rJson !== undefined){
                     if(rJson.success == false){
                         $('.reg-message').html(rJson.message);
                         $('.reg-message').css({color: '#F96D4E'});
