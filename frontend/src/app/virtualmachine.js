@@ -1,18 +1,12 @@
 //VirtualMacine Core
 import React from 'react';
-import OperatingSystem from './core/OS.js';
-import BoundLink from './core/boundlink.js';
-import FileSystem from './core/filesystem.js';
 import Operations from './core/operations_constants';
-import Programs from './core/programs_constants';
+import TProgs from './core/programs_constants';
 
 //Components
-import OsState from './components/os_state.js';
-import VirtualFileSystem from './components/virtualfilesystem.js';
-import Desktop from './components/desktop.js';
 import ProcessMonitor from './components/process_monitor.js';
 import TopMessage from './components/top_message';
-import ExplorerFilesystem from './components/explorer_fs.js'; './components/explorer_fs';
+import ExplorerFilesystem from './components/explorer_fs';
 
 //Default Software
 import RawTextEditor from './softwares/rawtexteditor';
@@ -20,7 +14,6 @@ import RawTextEditor from './softwares/rawtexteditor';
 //css
 import './css/main.css';
 import './css/grid_system.css';
-import TProgs from './core/programs_constants';
 
 class VirtualMachine extends React.Component {
 	constructor(props){
@@ -77,9 +70,6 @@ class VirtualMachine extends React.Component {
 
         //binds
         this.backgroundClickHandler = this.backgroundClickHandler.bind(this);
-
-		//Open communicating channel
-		BoundLink.openChannel('VM', ()=>{this.openChannel();});
 	}
 
     hideTopMessage(){
@@ -185,59 +175,6 @@ class VirtualMachine extends React.Component {
         }, 2000);
     }
 
-	openChannel() {
-		var boundData = BoundLink.getData('VM');
-
-		if (this.state.OS !== null) {
-			
-			//What action to take.
-			if (boundData.type == 'memory') {
-				if (boundData.action == 'allocate-memory') {
-					this.state.components.osState = this.state.OS.getSpecs();
-					this.state.components.processMonitor = this.state.OS.getProcessPool();
-					this.setState(this.state.components);
-				} 
-				else if(boundData.action == 'error') {
-					console.log(boundData.error);
-				}
-
-			} 
-			else if (boundData.type == 'filesystem') {
-				var allProcess = this.state.OS.createProcess(boundData.action+"--"+boundData.name, boundData.type, boundData.size);
-				if (boundData.callback !== null) {
-					allProcess.setCallbackProcessing(boundData.callback);
-				}
-				this.state.OS.allocateProcess(allProcess);
-			}
-
-			//Setting message to desktop event message
-			if (boundData.type == 'event-message') {
-				var defaultTime = this.state.eventMessage.timeMessage;
-				this.state.eventMessage.timeMessage = (boundData.time === undefined ? defaultTime : boundData.time);
-				this.state.eventMessage.message = boundData.data;
-				this.state.eventMessage.type = 'to-user';
-				this.state.eventMessage.callback();
-			}
-
-			//Open file
-			if (boundData.type == 'open-file') {
-				this.state.OS.automaticFileOpen(boundData.file);
-			}
-
-			if (boundData.type == 'process-monitor') {
-				this.state.components.processMonitor = boundData.data;
-				this.setState(this.state.components.processMonitor);
-			}
-
-		}
-
-		//Setting event message object to desktop component
-		if (boundData.type == 'desktop') {
-			this.state.eventMessage = boundData.evtmsg;
-			this.setState(this.state);
-		}
-	}
-
     backgroundClickHandler(e){
         //check start menu
         if(this.state.startButtonOpen)
@@ -249,44 +186,7 @@ class VirtualMachine extends React.Component {
         const rwtInstalled = this.state.programs.some((o)=>{
             return o.progName === TProgs.rwt;
         });
-        
-        if (this.state.OS) {
-			return (
-			<div id="v-machine"> 
-				<h1 className='color-change'>Virtual Machine - {this.state.components.osState.nameOS}</h1>
-				<p> hello, world! :) </p> 
-				<div> 
-					<div id="os-monitors">
-						<div style={{float:"left", width: "30%"}}>
-							<label><h3>Virtual OsState</h3></label> 
-							<OsState os={this.state.components.osState} />
-						</div>
-						<div style={{float:"left", width: "50%"}}>
-							<label><h3>Process Monitor</h3></label> 
-							<ProcessMonitor ws={this.state.ws} />
-						</div>
-					</div> 
-				</div>
 
-				<div style={{clear:"both"}}>
-					<ul id="vm-opts">
-						<li> <button onClick={()=>{this.state.OS.processDummy(150);}}>OpenApp</button> </li>
-						<li> <button onClick={(e)=>{this.installSoftwares(); e.target.parentNode.removeChild(e.target);}}>Install RawText</button> </li>
-					</ul>
-				</div>
-				
-				<div id="work-space">
-					<div style={{float: "left", width: "30%"}}>
-						<label><h3>Virtual Filesystem</h3></label> 
-						<VirtualFileSystem eventMessage={this.state.eventMessage} />
-					</div>
-					<div style={{float: "left", width: "70%", overflow: "hidden"}}>
-						<label><h3>Desktop</h3></label> 
-						<Desktop eventMessage={this.state.eventMessage} />
-					</div>
-				</div> 
-			</div>);
-		}
 		return (
 			<div className='gcontainer' onClick={this.backgroundClickHandler}>
                 <TopMessage message={this.state.messageTop} typemsg={this.state.typemsg} />
@@ -365,14 +265,12 @@ class VirtualMachine extends React.Component {
 
 	setVirtualMachine() {
 		var tmpSpecs = this.state.vmSpecs;
-		var tmpOS = new OperatingSystem(tmpSpecs.memory, tmpSpecs.num_core);
 		
 		//OS Installing
 		tmpOS.installCrankshaft();
 
 		//Installing filesystem
         //Will be removed in the refactorying
-		FileSystem.buildVirtualSpace();
 
 		//Rendering again
 		this.state.OS = tmpOS;
