@@ -1,0 +1,29 @@
+FROM python:3.10-alpine3.17
+
+COPY ./backend/infra /backend/infra 
+COPY ./backend/src_flask_server /backend/src_flask_server/
+COPY ./frontend/ /frontend/
+
+RUN chmod +x /backend/infra/entry.flask_server.install.sh \
+    && chmod +x /backend/infra/entry.flask_server.entrypoint.sh
+
+RUN /backend/infra/entry.flask_server.install.sh
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash \
+    && export NVM_NODEJS_ORG_MIRROR=https://unofficial-builds.nodejs.org/download/release \
+    && export NVM_DIR="$HOME/.nvm" \
+    && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" \
+    && echo 'nvm_get_arch() { nvm_echo "x64-musl"; }' >> $HOME/.nvm/nvm_arch_override.sh \
+    && source $NVM_DIR/nvm_arch_override.sh \
+    && nvm install --lts \
+    #&& nvm install --latest-npm \
+    && cd /frontend/ \
+    && npm install \
+    && npm run bdev \
+    && cd ..
+
+WORKDIR /backend/src_flask_server/
+
+RUN cp /backend/infra/entry.flask_server.entrypoint.sh ./ \
+    && python -m pip install -r requirements.txt
+
+ENTRYPOINT ["bash", "entry.flask_server.entrypoint.sh"]

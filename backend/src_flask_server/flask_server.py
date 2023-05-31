@@ -3,7 +3,7 @@ from flask import Flask, current_app
 from redis import Redis
 
 from psycopg2 import connect
-from psycopg2.extensions import connection
+from psycopg2.extensions import connection, cursor
 from psycopg2.extras import DictCursor
 
 from typing import Union
@@ -20,7 +20,7 @@ def create_db(connection_string) -> Union[None, connection]:
 def get_db() -> connection:
     return current_app.db
 
-def get_cursor():
+def get_cursor() -> cursor:
     db: connection = current_app.db
     return db.cursor(cursor_factory=DictCursor)
 
@@ -52,4 +52,4 @@ def create_app() -> Flask:
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(port=8064,debug=True)
+    app.run(host='0.0.0.0',port=8064,debug=True)
