@@ -3,7 +3,7 @@ var file_example = {
     fileOrFolder: "fl", 
     fileType: 'txt',
     fileName: "ab",
-    filePath: "/ab.txt",
+    filePath: "/ab",
     folder: "/", 
     fileContents: "ababab",
     folderName: null,

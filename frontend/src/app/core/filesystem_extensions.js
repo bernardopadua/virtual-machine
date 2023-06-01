@@ -1,0 +1,1 @@
+export const LIST_FILE_EXTENSIONS = ['raw', 'txt'];
