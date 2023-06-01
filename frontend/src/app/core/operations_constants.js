@@ -3,9 +3,13 @@ const Operations = {
     SAVEEXFILE : 'saveandexitfile',
     OPENFOLDER : 'openfolder',
     LISTFILES  : 'listfiles',
+    CHNGCURDIR : 'changecurrentdir',
     LISTPROC   : 'listprocess',
     LISTPROGS  : 'listprograms',
     MSGTOP     : 'messagetop',
-    INSTPROG   : 'installprogram'
+    INSTPROG   : 'installprogram',
+    CREATEFILE : 'createfile',
+    REMOVEFILE : 'removefile',
+    CREATEFLD  : 'createfolder'
 };
 export default Operations;

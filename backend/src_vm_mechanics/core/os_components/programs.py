@@ -61,11 +61,12 @@ class RawTextEditor(Programs):
 
     def install(self) -> None:
         mongo = self._os.getSyncMongoPrograms()
-        reg = self.regMongoProgram(mongo)
+        reg   = self.regMongoProgram(mongo)
 
         if self.timeSleep > 0 and reg:
             import time
             time.sleep(self.timeSleep)
-
+        
         self._os.killPid_noWait(self.pid)
+        self._os.fillProgramsInstalled()
         self.listProgs()            

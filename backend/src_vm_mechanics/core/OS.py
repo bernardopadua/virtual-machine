@@ -17,7 +17,8 @@ class OperatingSystem(Kernel):
             ws:WebSocketServerProtocol = None,
             
         ):
-        super().__init__(userId=userId)
+        #TODO: Interface must be a mirror of this current directory
+        super().__init__(userId=userId, currentDirectory='/') 
         
         #increasing forever, as long
         # as computer is turned on
@@ -26,8 +27,6 @@ class OperatingSystem(Kernel):
         self.cpuCores    = cpuCores
         self.cpuPower    = cpuPower
         self.hdSize      = hdSize
-
-        self.currentDirectory = '/' #TODO: Interface must be a mirror of this.
 
         self.processPid  = 0
         self.processPool = []
@@ -93,6 +92,9 @@ class OperatingSystem(Kernel):
 
     #region FILES OPERATIONS
 
+    async def setCurrentDirectory(self, directory:str):
+        self._currentDirectory = directory
+
     async def getFile(self, filePath:str) -> str:
         #this string must be treated (security)
         result = await self.kGetFile(filePath=filePath)
@@ -112,8 +114,8 @@ class OperatingSystem(Kernel):
         result = await self.kFolderExists(folderPath)
         return result
 
-    async def fileExists(self, filePath:str) -> bool:
-        result = await self.kFileExists(filePath)
+    async def fileExists(self, filePath:str, *, fileType:str=None) -> bool:
+        result = await self.kFileExists(filePath, fileType=fileType)
         return result
 
     def checkFolderRegex(self, folderPath:str) -> bool:
@@ -123,6 +125,10 @@ class OperatingSystem(Kernel):
             if len(folderPath) > 1:
                 s = folderPath.split('/')
                 del s[0] #first slash (/)
+                #removing blank from last slash (/)
+                if s[len(s)-1] == '':
+                    del s[len(s)-1]
+
                 if '' in s:
                     return False
 
@@ -150,7 +156,7 @@ class OperatingSystem(Kernel):
                     }
                 return prc
             else:
-                self.messageTop("You doesn't has the appropriated program to open this file.")
+                await self.messageTop("You doesn't has the appropriated program to open this file.")
         
             
 
@@ -158,11 +164,14 @@ class OperatingSystem(Kernel):
 
     #region USEFUL OS
 
-    async def messageTop(self, message: str, *, typeMsg: str = None) -> None:
+    async def sendWs(self, dictData:dict) -> None:
+        await self.ws.send(json.dumps(dictData))
+
+    async def messageTop(self, message: str, *, typeMsg: str = None, timeVanish:int = None) -> None:
         if typeMsg is None:
-            await self.ws.send(json.dumps({"operation": Pqueue.MSGTOP.value, "message": message}))
+            await self.ws.send(json.dumps({"operation": Pqueue.MSGTOP.value, "message": message, "timeVanish": timeVanish}))
         else:
-            await self.ws.send(json.dumps({"operation": Pqueue.MSGTOP.value, "typemsg": typeMsg, "message": message}))
+            await self.ws.send(json.dumps({"operation": Pqueue.MSGTOP.value, "typemsg": typeMsg, "message": message, "timeVanish": timeVanish}))
 
     async def getProgramsInstalled(self) -> List[dict]:
         result = await self.kGetPrograms()
@@ -175,8 +184,11 @@ class OperatingSystem(Kernel):
     async def joinQueue(self) -> None:
         await self.__loopQueue.join()
 
-    def     enqueueProcess(self, process) -> None:
+    def enqueueProcess(self, process:dict) -> None:
         self.__loopQueue.put_nowait(process)
+
+    async def asyncEnqueueProcess(self, process:dict) -> None:
+        await self.__loopQueue.put(process)
 
     async def processQueue(self)->None:
         if self.isProcessing:
@@ -208,6 +220,39 @@ class OperatingSystem(Kernel):
                             }))
 
                     #>
+                    case Pqueue.CREATEFILE.value:
+                        result = await self.kCreateFile(
+                            task['fileName'],
+                            task['fileType']
+                        )
+
+                        if result["success"]:
+                            await self.messageTop(result["message"], typeMsg=TypeMessage.GREEN.value)
+                        else:
+                            await self.messageTop(result["message"])
+
+                        #TODO: How to enqueue another task ??
+                        await self.asyncEnqueueProcess({"operation": Pqueue.LISTFILES.value})
+
+                    #>
+                    case Pqueue.REMOVEFILE.value:
+                        fP = task['filePath']
+                        fT = task['fileType']
+                        if not await self.fileExists(fP, fileType=fT):
+                            await self.messageTop("File doesn't exist")
+                        
+                        r = await self.kRemoveFile(fP, fileType=fT)
+                        if r["success"]:
+                            await self.messageTop(r["message"], typeMsg=TypeMessage.GREEN.value)
+                            await self.asyncEnqueueProcess({"operation": Pqueue.LISTFILES.value})
+                        else:
+                            await self.messageTop(r["message"])
+
+                    #>
+                    case Pqueue.CREATEFLD.value:
+                        pass
+
+                    #>
                     # {
                     #     operation: Operations.SAVEEXFILE,
                     #     file: {
@@ -228,6 +273,7 @@ class OperatingSystem(Kernel):
 
                         if "success" not in r:
                             await self.messageTop("Internal kernel error.")
+                            raise Exception("[Pqueue.SAVEEXFILE] Internal kernel error")
 
                         if r["success"]:
                             await self.messageTop("File was replaced successfully!", typeMsg=TypeMessage.GREEN.value)
@@ -241,7 +287,8 @@ class OperatingSystem(Kernel):
                         #refreshing procs
                         self.enqueueProcess({"operation": Pqueue.LISTPROC.value})
 
-                        await self.ws.send(json.dumps({"operation": Pqueue.SAVEEXFILE.value, 
+                        await self.ws.send(json.dumps({
+                            "operation": Pqueue.SAVEEXFILE.value, 
                             "contents": {
                                 "program": pG,
                                 "pid": pD
@@ -285,17 +332,31 @@ class OperatingSystem(Kernel):
                             self.__loopQueue.task_done()
 
                     #>
-                    case Pqueue.LISTFILES.value:
+                    case Pqueue.CHNGCURDIR.value:
                         if self.checkFolderRegex(task['folder']):
                             exists = await self.folderExists(task['folder'])
                             if not exists:
-                                await self.ws.send(json.dumps({"operation": Pqueue.MSGTOP.value, "message": "Folder doesn't exists."}))
+                                await self.messageTop(message="Folder doesn't exists.")
+                                await self.sendWs({"operation": Pqueue.CHNGCURDIR.value, "folder": self._currentDirectory})
                             else:
-                                files     = await self.getFolder(task['folder'])
+                                self._currentDirectory = task['folder']
+                                await self.asyncEnqueueProcess({"operation": Pqueue.LISTFILES.value})
+                        else:
+                            await self.messageTop(message="Invalid folder! Valid one: /folder1/folder2/")
+                            await self.sendWs({"operation": Pqueue.CHNGCURDIR.value, "folder": self._currentDirectory})
+
+                    #>
+                    case Pqueue.LISTFILES.value:
+                        if self.checkFolderRegex(self._currentDirectory):
+                            exists = await self.folderExists(self._currentDirectory)
+                            if not exists:
+                                await self.messageTop(message="Folder doesn't exists.")
+                            else:
+                                files = await self.getFolder(self._currentDirectory)
                                 await self.ws.send(json.dumps({"operation": Pqueue.LISTFILES.value, "contents": files}))
                         else:
                             await self.ws.send(json.dumps({"operation": Pqueue.LISTFILES.value, "contents": ""}))
-                            await self.ws.send(json.dumps({"operation": Pqueue.MSGTOP.value, "message": "Invalid folder! Valid one: /folder1/folder2/"}))
+                            await self.messageTop(message="Invalid folder! Valid one: /folder1/folder2/")
 
                     #>
                     case Pqueue.LISTPROGS.value:

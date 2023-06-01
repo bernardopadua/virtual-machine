@@ -147,6 +147,7 @@ def register():
                     "userId": _user_id, 
                     "fileOrFolder": "fl", 
                     "fileName": "RawTextInstaller",
+                    "filePath": "/RawTextInstaller",
                     "folder": "/", 
                     "fileContents": None,
                     "folderName": None,

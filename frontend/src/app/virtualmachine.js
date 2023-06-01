@@ -72,6 +72,16 @@ class VirtualMachine extends React.Component {
         this.backgroundClickHandler = this.backgroundClickHandler.bind(this);
 	}
 
+    messagingTop(message, timeVanish){
+        if(!timeVanish){
+            this.setState({messageTop: message}, this.hideTopMessage);
+            return;
+        }
+
+        this.setState({messageTop: message, timeVanish: timeVanish}, this.hideTopMessage);
+        return;
+    }
+
     hideTopMessage(){
         setTimeout(() => {
             this.setState({messageTop: '', typemsg: '', timeVanish: 2000});
@@ -111,7 +121,7 @@ class VirtualMachine extends React.Component {
         switch (ndata.operation) {
             //#>
             case Operations.OPENFILE:
-                if(ndata.contents.program !== null){
+                if(ndata.contents && ndata.contents.program !== null){
                     const program = ndata.contents.program.program;
                     const pid     = ndata.contents.program.pid;
                     //if-else programs
@@ -225,6 +235,7 @@ class VirtualMachine extends React.Component {
                 <div className='gitem-window'>
                     <ExplorerFilesystem ws={this.state.ws} 
                         createFile={rwtInstalled}
+                        messagingTop={this.messagingTop}
                     />
                 </div>
                 <div className='gitem-window-second'>
