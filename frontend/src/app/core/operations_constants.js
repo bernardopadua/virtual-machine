@@ -10,6 +10,7 @@ const Operations = {
     INSTPROG   : 'installprogram',
     CREATEFILE : 'createfile',
     REMOVEFILE : 'removefile',
-    CREATEFLD  : 'createfolder'
+    CREATEFLD  : 'createfolder',
+    REMOVEFLD  : 'removefolder',
 };
 export default Operations;

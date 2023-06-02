@@ -13,6 +13,7 @@ class Pqueue(Enum):
     CREATEFILE = 'createfile'
     REMOVEFILE = 'removefile'
     CREATEFLD  = 'createfolder'
+    REMOVEFLD  = 'removefolder'
 
 class TypeMessage(Enum):
     GREEN  = 'green'

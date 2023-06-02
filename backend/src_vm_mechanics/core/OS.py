@@ -157,8 +157,7 @@ class OperatingSystem(Kernel):
                 return prc
             else:
                 await self.messageTop("You doesn't has the appropriated program to open this file.")
-        
-            
+
 
     #endregion FILES
 
@@ -205,6 +204,10 @@ class OperatingSystem(Kernel):
                 #parse dict
                 match task['operation']:
                     #>
+                    case 'test':
+                        await self.test()
+                    
+                    #>
                     case Pqueue.OPENFILE.value:
                         file = await self.getFile(task['filePath'])
                         prc  = await self.checkFileTypeAndOpenProcessProgram(file)
@@ -213,6 +216,8 @@ class OperatingSystem(Kernel):
                                 "operation": Pqueue.OPENFILE.value,
                                 "contents": self.programsOpenedPid[prc.pid]
                             }))
+
+                            await self.asyncEnqueueProcess({"operation": Pqueue.LISTPROC.value})
                         else:
                             await self.ws.send(json.dumps({
                                 "operation": Pqueue.OPENFILE.value,
@@ -250,8 +255,30 @@ class OperatingSystem(Kernel):
 
                     #>
                     case Pqueue.CREATEFLD.value:
-                        pass
-
+                        fd = task['folderName']
+                        fP = self.concantCurrentDir(fd)
+                        if await self.kFolderExists(folderPath=fP, isFolder=True):
+                            await self.messageTop(message="Folder already exists!")
+                        else:
+                            r = await self.kCreateFolder(folder=self._currentDirectory, folderName=fd, folderPath=fP)
+                            if r['success']:
+                                await self.messageTop(message=r['message'], typeMsg=TypeMessage.GREEN.value)
+                                await self.asyncEnqueueProcess({"operation": Pqueue.LISTFILES.value})
+                            else:
+                                await self.messageTop(message=r['message'])
+                    
+                    #>
+                    case Pqueue.REMOVEFLD.value:
+                        fP = task['folderPath']
+                        if await self.kFolderExists(folderPath=fP, isFolder=True):
+                            r = await self.kRemoveFolderRecursive(fP)
+                            if r["success"]:
+                                await self.messageTop(message=r["message"], typeMsg=TypeMessage.GREEN.value)
+                                await self.asyncEnqueueProcess({"operation": Pqueue.LISTFILES.value})
+                            else:
+                                await self.messageTop(message=r["message"])
+                        else:
+                            self.messageTop(message="Folder doesn't exists!")
                     #>
                     # {
                     #     operation: Operations.SAVEEXFILE,
@@ -334,12 +361,16 @@ class OperatingSystem(Kernel):
                     #>
                     case Pqueue.CHNGCURDIR.value:
                         if self.checkFolderRegex(task['folder']):
-                            exists = await self.folderExists(task['folder'])
+                            if task['folder'] == '/': #root
+                                exists = await self.folderExists(task['folder'])
+                            else:
+                                exists = await self.kFolderExists(folderPath=task['folder'], isFolder=True)
                             if not exists:
                                 await self.messageTop(message="Folder doesn't exists.")
                                 await self.sendWs({"operation": Pqueue.CHNGCURDIR.value, "folder": self._currentDirectory})
                             else:
                                 self._currentDirectory = task['folder']
+                                await self.sendWs({"operation": Pqueue.CHNGCURDIR.value, "folder": self._currentDirectory})
                                 await self.asyncEnqueueProcess({"operation": Pqueue.LISTFILES.value})
                         else:
                             await self.messageTop(message="Invalid folder! Valid one: /folder1/folder2/")
@@ -348,7 +379,10 @@ class OperatingSystem(Kernel):
                     #>
                     case Pqueue.LISTFILES.value:
                         if self.checkFolderRegex(self._currentDirectory):
-                            exists = await self.folderExists(self._currentDirectory)
+                            if self._currentDirectory != '/': #root
+                                exists = await self.kFolderExists(folderPath=self._currentDirectory, isFolder=True)
+                            else:
+                                exists = await self.folderExists(self._currentDirectory)
                             if not exists:
                                 await self.messageTop(message="Folder doesn't exists.")
                             else:

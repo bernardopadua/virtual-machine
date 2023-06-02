@@ -4,7 +4,7 @@ from pymongo.collection import Collection
 
 from core.os_constants import CONTAINS_VAR_EXT
 #from core.OS import OperatingSystem
-from core.mongo_filesystem import MgFileFolder
+from core.mongo_filesystem import MgFileFolder, MgDocType
 from core.messaging_kernel_os import kMessage
 from conf import MONGO_DB_STRING_CONN, MONGO_DB_COLLECTIONS
 
@@ -12,12 +12,14 @@ class Kernel:
     def __init__(self, userId, *, currentDirectory:str=None) -> None:
         self._userId = userId
         
+        self._mongoClient       = AsyncIOMotorClient(MONGO_DB_STRING_CONN)
+
         self._mongoFS           = \
-            AsyncIOMotorClient(MONGO_DB_STRING_CONN) \
+            self._mongoClient \
             [MONGO_DB_COLLECTIONS.usersfs.value] \
             [MONGO_DB_COLLECTIONS.userfscollection.value.format(userId)]
         self._installedPrograms = \
-            AsyncIOMotorClient(MONGO_DB_STRING_CONN)\
+            self._mongoClient \
             [MONGO_DB_COLLECTIONS.userprograms.value]\
             [MONGO_DB_COLLECTIONS.userpgrcollection.value.format(userId)]
 
@@ -56,6 +58,22 @@ class Kernel:
         else:
             return f"{cd}/{fileName}"
 
+    async def kCreateFolder(self, folder:str, folderName:str, folderPath:str) -> dict:
+        folderExists = await self.kFolderExists(folderPath=folderPath)
+        if folderExists:
+            return kMessage(message="Folder already exists!").serialize()
+
+        newFolder = MgFileFolder(
+            userId=self._userId,
+            fileOrFolder=MgDocType.FOLDER.value,
+            folder=folder,
+            folderPath=folderPath,
+            folderName=folderName
+        )
+        await self._mongoFS.insert_one(newFolder.toJson())
+
+        return kMessage(success=True, message="Folder created!").serialize()
+
     async def kCreateFile(self, fileName:str, fileExt:str) -> dict:
         filePath   = self.concantCurrentDir(fileName=fileName)
         fileExists = await self.kFileExists(filePath=filePath, fileType=fileExt)
@@ -67,7 +85,7 @@ class Kernel:
         if not fileExists:
             newFile = MgFileFolder(
                 userId=self._userId,
-                fileOrFolder='fl',
+                fileOrFolder=MgDocType.FILE.value,
                 fileType=fileExt,
                 fileName=fileName,
                 filePath=filePath,
@@ -90,6 +108,12 @@ class Kernel:
             return await self._mongoFS.count_documents({"filePath":filePath})
         elif fileType:
             return await self._mongoFS.count_documents({"filePath":filePath, "fileType":fileType})
+
+    async def kFileExists(self, filePath:str, *, fileType:str=None) -> bool:
+        if fileType is None:
+            return await self._mongoFS.count_documents({"filePath": filePath}) > 0
+        else:
+            return await self._mongoFS.count_documents({"filePath": filePath, "fileType": fileType}) > 0
 
     async def kGetFile(self, filePath:str) -> dict:
         total = await self._countFiles(filePath)
@@ -138,13 +162,39 @@ class Kernel:
         cursor = self._mongoFS.find({"folder": folderPath}, {"fileContents":0, "_id": 0})
         return await cursor.to_list(length=total)
 
-    async def kFolderExists(self, folderPath:str):
-        return await self._mongoFS.count_documents({"folder": folderPath}) > 0
-
-    async def kFileExists(self, filePath:str, *, fileType:str=None) -> bool:
-        if fileType is None:
-            return await self._mongoFS.count_documents({"filePath": filePath}) > 0
+    async def kFolderExists(self, folderPath:str, *, isFolder:bool=False):
+        if not isFolder:
+            return await self._mongoFS.count_documents({"folder": folderPath}) > 0
         else:
-            return await self._mongoFS.count_documents({"filePath": filePath, "fileType": fileType}) > 0
+            return await self._mongoFS.count_documents({"folderPath": folderPath}) > 0
+
+    async def kRemoveFolderRecursive(self, folderPath:str):
+        try:
+            #removing last slash /
+            if folderPath[-1] == '/':
+                folderPath = folderPath[0:-1]
+
+            folderExists = await self.kFolderExists(folderPath=folderPath, isFolder=True)
+            if not folderExists:
+                return kMessage(message="Folder doesn't exists!").serialize()
+
+            tr = await self._mongoFS.count_documents({"folderPath": {"$regex": folderPath}})
+            r  = self._mongoFS.find({"folderPath": {"$regex": folderPath}})
+            session = await self._mongoClient.start_session()
+            async with session.start_transaction():
+                for folder in await r.to_list(length=tr):
+                    self._mongoFS.delete_many({"folder": folder["folderPath"]})
+                    self._mongoFS.delete_one({"folderPath": folder["folderPath"]})
+            
+            return kMessage(message="Folder was recursively deleted!", success=True).serialize()
+        except Exception as e:
+            print(f"[kRemoveFolderRecursive]: Error:: {e}")
+            return kMessage(message="There was an error when trying to delete the folder recursively.").serialize()
+        finally:
+            session.end_session()
+
+    async def test(self): #TODO: transform into recursive function to delete folders and files
+        #used to test things.
+        pass
 
     #endregion FilesAndFolder
