@@ -2,7 +2,7 @@ from websockets.datastructures import Headers
 from websockets.legacy.server import WebSocketServerProtocol
 from websockets.exceptions import ConnectionClosed
 
-from core.OS import OperatingSystem, Pqueue
+from core.OS import OperatingSystem
 from conf import REDIS_HOST, REDIS_PORT
 from redis_constants import USER_SESSION_WEBSOCKET
 

@@ -192,12 +192,7 @@ class VirtualMachine extends React.Component {
     }
 
 	render() {
-		//installed programs
-        const rwtInstalled = this.state.programs.some((o)=>{
-            return o.progName === TProgs.rwt;
-        });
-
-		return (
+        return (
 			<div className='gcontainer' onClick={this.backgroundClickHandler}>
                 <TopMessage message={this.state.messageTop} typemsg={this.state.typemsg} />
                 <div className='gitem-a'>
@@ -207,23 +202,13 @@ class VirtualMachine extends React.Component {
                     style={{display: (this.state.startButtonOpen) ? '' : 'none'}}
                 >
                     <div className='smcontainer-flex'>
-                        {(!rwtInstalled) &&
-                            <div className='smitem-flex'
-                                onClick={()=>{
-                                    this.wsSendMessage({tt:22});
-                                }}    
-                            >
-                                install
-                            </div>
-                            ||
-                            <div className='smitem-flex'
-                                onClick={()=>{
-                                    this.wsSendMessage({tt:22});
-                                }}    
-                            >
-                                install2
-                            </div>
-                        }
+                        <div className='smitem-flex'
+                            onClick={()=>{
+                                this.wsSendMessage({tt:22});
+                            }}    
+                        >
+                            install
+                        </div>
                         <div className='smitem-flex'>
                             Browser
                         </div>
@@ -234,7 +219,6 @@ class VirtualMachine extends React.Component {
                 </div>
                 <div className='gitem-window'>
                     <ExplorerFilesystem ws={this.state.ws} 
-                        createFile={rwtInstalled}
                         messagingTop={this.messagingTop}
                     />
                 </div>

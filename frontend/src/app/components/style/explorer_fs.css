@@ -29,6 +29,10 @@
     flex-shrink: 1;
 }
 
+.efs-item-filefolder.folder {
+    background-color: rgb(43, 192, 192);
+}
+
 .input-folder-label {
     display: table-cell;
     width: 1px;
